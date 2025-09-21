@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
-import { fetchArticles, analyzeContent, Article } from "../../services/api";
+import { fetchArticles, generateAnalysis, generateReport, Article } from "../../services/api";
 
 export type UserType = "normal" | "journalist";
 
@@ -41,6 +41,7 @@ export const Slide = ({ onSearchClick }: SlideProps): JSX.Element => {
   const [showResponse, setShowResponse] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
   // Fetch articles on component mount
@@ -63,19 +64,22 @@ export const Slide = ({ onSearchClick }: SlideProps): JSX.Element => {
   const handleSearchClick = async () => {
     if (searchQuery.trim()) {
       if (userType === "normal") {
-        // For normal users, show response below on same page
+        // For normal users, show response below on same page using /generate endpoint
+        setAnalysisLoading(true);
         try {
-          const analysis = await analyzeContent(searchQuery, userType);
+          const analysis = await generateAnalysis(searchQuery);
           setAnalysisData(analysis);
           setShowResponse(true);
         } catch (error) {
-          console.error('Error analyzing content:', error);
+          console.error('Error generating analysis:', error);
           // Fallback to template data
           setAnalysisData(normalUserDataTemplate);
           setShowResponse(true);
+        } finally {
+          setAnalysisLoading(false);
         }
       } else if (userType === "journalist" && onSearchClick) {
-        // For journalists, navigate to detailed report page
+        // For journalists, navigate to detailed report page using /generate-report endpoint
         onSearchClick(searchQuery, userType);
       }
     }
@@ -496,8 +500,36 @@ export const Slide = ({ onSearchClick }: SlideProps): JSX.Element => {
             Get an AI-powered Credibility Score for any headline, topic, or claim.
           </p>
 
+          {/* Loading indicator for analysis */}
+          {analysisLoading && (
+            <div className="w-full max-w-4xl mx-auto mt-8 text-center">
+              <div 
+                className="p-6 rounded-lg"
+                style={{
+                  background: '#FFFFFF',
+                  border: '2px solid #E5E5E5',
+                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+                }}
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span 
+                    style={{
+                      fontFamily: 'Hubot Sans, sans-serif',
+                      fontWeight: 500,
+                      fontSize: '16px',
+                      color: '#212529'
+                    }}
+                  >
+                    Analyzing content...
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Simplified Response for Normal Users */}
-          {showResponse && userType === "normal" && analysisData && (
+          {showResponse && userType === "normal" && analysisData && !analysisLoading && (
             <div className="w-full max-w-4xl mx-auto mt-8 space-y-6">
               {/* Overall Score Card */}
               <div 

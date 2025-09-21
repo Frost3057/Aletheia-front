@@ -1,7 +1,12 @@
+import React, { useState, useEffect } from "react";
+import { generateReport, AnalysisResponse } from "../../services/api";
+
 export type UserType = "normal" | "journalist";
 
 interface ReportProps {
   userType?: UserType;
+  searchQuery?: string;
+  onBackClick?: () => void;
 }
 
 // Mock data structure for Normal Users (simplified)
@@ -66,9 +71,32 @@ const getBiasColor = (bias: string): string => {
   return '#6B7280';
 };
 
-export const Report = ({ userType = "normal" }: ReportProps): JSX.Element => {
-  // Select appropriate data based on user type
-  const data = userType === "journalist" ? journalistData : normalUserData;
+export const Report = ({ userType = "normal", searchQuery = "Climate change impacts on global economy", onBackClick }: ReportProps): JSX.Element => {
+  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch analysis data on component mount
+  useEffect(() => {
+    const loadAnalysis = async () => {
+      try {
+        setLoading(true);
+        // Use generate-report endpoint for detailed journalist analysis
+        const analysis = await generateReport(searchQuery);
+        setAnalysisData(analysis);
+      } catch (error) {
+        console.error('Error loading analysis:', error);
+        // Fallback to mock data
+        setAnalysisData(journalistData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnalysis();
+  }, [searchQuery, userType]);
+
+  // Select appropriate data based on user type and API response
+  const data = analysisData || (userType === "journalist" ? journalistData : normalUserData);
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-6">
@@ -134,18 +162,25 @@ export const Report = ({ userType = "normal" }: ReportProps): JSX.Element => {
               padding: '0 20px'
             }}
           >
-            <span 
-              className="text-black"
+            <button
+              onClick={onBackClick}
+              className="flex items-center gap-2 hover:text-blue-600 transition-colors"
               style={{
                 fontFamily: 'Hubot Sans, sans-serif',
                 fontWeight: 400,
                 fontSize: '16px',
                 lineHeight: '1.4',
-                color: '#212529'
+                color: '#212529',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer'
               }}
             >
-              Home
-            </span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back to Home
+            </button>
             <div className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.2517 24.2714C14.9124 24.2714 17.3659 23.4193 19.3733 21.9989L26.9251 29.4792C27.2756 29.8264 27.7377 30 28.2315 30C29.2671 30 30 29.2109 30 28.2009C30 27.7275 29.8407 27.2699 29.4902 26.9385L21.9862 19.4897C23.5635 17.4382 24.5035 14.8974 24.5035 12.1357C24.5035 5.46028 18.991 0 12.2517 0C5.52841 0 0 5.4445 0 12.1357C0 18.8112 5.51248 24.2714 12.2517 24.2714ZM12.2517 21.6518C6.99416 21.6518 2.64472 17.3435 2.64472 12.1357C2.64472 6.92793 6.99416 2.61967 12.2517 2.61967C17.5093 2.61967 21.8587 6.92793 21.8587 12.1357C21.8587 17.3435 17.5093 21.6518 12.2517 21.6518Z" fill="#212529"/>

@@ -29,46 +29,186 @@ export interface AnalysisResponse {
   tools_used: string[];
 }
 
-// Fetch articles for homepage
+// Fetch articles for homepage (max 5 articles)
 export const fetchArticles = async (limit: number = 5): Promise<Article[]> => {
+  const actualLimit = Math.min(limit, 5);
+  console.log(`Fetching articles with limit: ${actualLimit}`);
+  
   try {
-    const response = await fetch(`${API_BASE_URL}/articles?limit=${limit}`);
+    const url = `${API_BASE_URL}/articles?limit=${actualLimit}`;
+    console.log('Fetching from URL:', url);
+    
+    const response = await fetch(url);
+    console.log('Articles response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Articles API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
+    
     const data = await response.json();
-    return data.articles || data || [];
+    console.log('Raw articles response:', data);
+    
+    // Handle different possible response structures
+    let articles = [];
+    if (Array.isArray(data)) {
+      articles = data;
+    } else if (data.articles && Array.isArray(data.articles)) {
+      articles = data.articles;
+    } else if (data.data && Array.isArray(data.data)) {
+      articles = data.data;
+    } else {
+      console.warn('Unexpected articles response structure:', data);
+    }
+    
+    console.log('Extracted articles array:', articles);
+    
+    // Map and validate article structure
+    const structuredArticles: Article[] = articles.map((article: any, index: number) => ({
+      id: article.id || article._id || `article-${index}`,
+      title: article.title || article.headline || `Article ${index + 1}`,
+      description: article.description || article.summary || article.excerpt || "No description available",
+      credibilityScore: article.credibilityScore || article.credibility_score || article.score || Math.floor(Math.random() * 40) + 60,
+      url: article.url || article.link || undefined,
+      category: article.category || article.topic || "General",
+      publishedAt: article.publishedAt || article.published_at || article.date || undefined,
+      source: article.source || article.publisher || "Unknown Source"
+    }));
+    
+    // Ensure we never return more than 5 articles
+    const finalArticles = structuredArticles.slice(0, 5);
+    console.log('Final structured articles:', finalArticles);
+    
+    return finalArticles;
   } catch (error) {
     console.error('Error fetching articles:', error);
-    // Return mock data as fallback
-    return getMockArticles(limit);
+    // Return mock data as fallback (max 5)
+    console.log('Falling back to mock articles');
+    return getMockArticles(actualLimit);
   }
 };
 
-// Analyze content
-export const analyzeContent = async (query: string, userType: 'normal' | 'journalist'): Promise<AnalysisResponse> => {
+// Generate analysis for normal users
+export const generateAnalysis = async (query: string): Promise<AnalysisResponse> => {
+  console.log('Calling /generate endpoint with query:', query);
+  
   try {
-    const response = await fetch(`${API_BASE_URL}/analyze`, {
+    const requestBody = { content: query };
+    console.log('Request body:', requestBody);
+    
+    const response = await fetch(`${API_BASE_URL}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        content: query,
-        user_type: userType
-      }),
+      body: JSON.stringify(requestBody),
     });
     
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
     
     const data = await response.json();
-    return data;
+    console.log('Raw API response:', data);
+    
+    // Validate and structure the response data
+    const structuredData: AnalysisResponse = {
+      author_cred_score: data.author_cred_score || data.authorCredScore || 75,
+      source_reliablity_score: data.source_reliablity_score || data.sourceReliabilityScore || 68,
+      citations: data.citations || [],
+      Bias_sentiment_report: {
+        sentiment_distribution: data.Bias_sentiment_report?.sentiment_distribution || data.sentimentDistribution || ["Neutral"],
+        bias_classification: data.Bias_sentiment_report?.bias_classification || data.biasClassification || "Neutral"
+      },
+      evidence_based_contradictions: data.evidence_based_contradictions || data.contradictions || "",
+      manupulation_techniques: data.manupulation_techniques || data.manipulationTechniques || [],
+      Model_score: {
+        Confidence_score: data.Model_score?.Confidence_score || data.confidenceScore || 80,
+        Key_features_influencing_decision: data.Model_score?.Key_features_influencing_decision || data.keyFeatures || ""
+      },
+      general_overview: data.general_overview || data.overview || "",
+      tools_used: data.tools_used || data.toolsUsed || []
+    };
+    
+    console.log('Structured response:', structuredData);
+    return structuredData;
   } catch (error) {
-    console.error('Error analyzing content:', error);
+    console.error('Error generating analysis:', error);
     // Return mock data as fallback
-    return getMockAnalysis(userType);
+    console.log('Falling back to mock data');
+    return getMockAnalysis('normal');
+  }
+};
+
+// Generate detailed report for journalists
+export const generateReport = async (query: string): Promise<AnalysisResponse> => {
+  console.log('Calling /generate-report endpoint with query:', query);
+  
+  try {
+    const requestBody = { content: query };
+    console.log('Request body:', requestBody);
+    
+    const response = await fetch(`${API_BASE_URL}/generate-report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Raw API response:', data);
+    
+    // Validate and structure the response data for detailed journalist report
+    const structuredData: AnalysisResponse = {
+      author_cred_score: data.author_cred_score || data.authorCredScore || 75,
+      source_reliablity_score: data.source_reliablity_score || data.sourceReliabilityScore || 68,
+      citations: data.citations || [],
+      Bias_sentiment_report: {
+        sentiment_distribution: data.Bias_sentiment_report?.sentiment_distribution || data.sentimentDistribution || ["Neutral"],
+        bias_classification: data.Bias_sentiment_report?.bias_classification || data.biasClassification || "Neutral"
+      },
+      evidence_based_contradictions: data.evidence_based_contradictions || data.contradictions || "",
+      manupulation_techniques: data.manupulation_techniques || data.manipulationTechniques || [],
+      Model_score: {
+        Confidence_score: data.Model_score?.Confidence_score || data.confidenceScore || 82,
+        Key_features_influencing_decision: data.Model_score?.Key_features_influencing_decision || data.keyFeatures || ""
+      },
+      general_overview: data.general_overview || data.overview || "",
+      tools_used: data.tools_used || data.toolsUsed || []
+    };
+    
+    console.log('Structured response:', structuredData);
+    return structuredData;
+  } catch (error) {
+    console.error('Error generating report:', error);
+    // Return mock data as fallback
+    console.log('Falling back to mock data');
+    return getMockAnalysis('journalist');
+  }
+};
+
+// Legacy function for backward compatibility
+export const analyzeContent = async (query: string, userType: 'normal' | 'journalist'): Promise<AnalysisResponse> => {
+  if (userType === 'journalist') {
+    return generateReport(query);
+  } else {
+    return generateAnalysis(query);
   }
 };
 
