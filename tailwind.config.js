@@ -56,6 +56,8 @@ module.exports = {
           '"Segoe UI Symbol"',
           '"Noto Color Emoji"',
         ],
+        display: ["Playfair Display", "serif"],
+        body: ["Lora", "serif"],
       },
       keyframes: {
         "accordion-down": {
