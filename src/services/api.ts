@@ -6,7 +6,7 @@ const resolveBaseUrl = (): string => {
     | undefined;
 
   const fromEnv = meta?.env?.VITE_API_BASE_URL;
-  return sanitizeBaseUrl(fromEnv ?? "http://127.0.0.1:8000");
+  return sanitizeBaseUrl(fromEnv ?? "https://demyst-latest.onrender.com");
 };
 
 const API_BASE_URL = resolveBaseUrl();
