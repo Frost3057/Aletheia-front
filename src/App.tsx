@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { Slide, UserType } from "./screens/Slide";
 import { Report } from "./screens/Report";
 
@@ -77,6 +78,8 @@ export const App = (): JSX.Element => {
           </div>
         </div>
       )}
+
+      <Analytics />
     </div>
   );
 };

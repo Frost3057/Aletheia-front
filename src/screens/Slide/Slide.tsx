@@ -40,19 +40,16 @@ export const Slide = (_props: SlideProps): JSX.Element => {
   };
 
   return (
-    <div
-      className="bg-[#FDFBF7] dark:bg-[#1F2937] font-body text-[#374151] dark:text-[#F3F4F6] transition-colors duration-300"
-      style={{ minHeight: "max(884px, 100dvh)" }}
-    >
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <header className="text-center py-6 border-b-2 border-double border-[#374151] dark:border-[#F3F4F6]">
-          <h1 className="font-display text-5xl md:text-7xl font-bold">The Demyst Times</h1>
-          <p className="text-sm mt-2">Monday, July 22, 2024 - Brighton, UK</p>
+    <div className="min-h-screen md:min-h-[884px] bg-[#FDFBF7] dark:bg-[#1F2937] font-body text-[#374151] dark:text-[#F3F4F6] transition-colors duration-300">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <header className="border-b-2 border-double border-[#374151] py-4 text-center dark:border-[#F3F4F6] sm:py-6">
+          <h1 className="font-display text-4xl font-bold sm:text-5xl md:text-7xl">The Demyst Times</h1>
+          <p className="mt-2 text-xs sm:text-sm">Monday, July 22, 2024 - Brighton, UK</p>
         </header>
 
-        <main className="mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <aside className="col-span-1 border-r border-[#E5E7EB] dark:border-[#4B5563] pr-4 space-y-6">
+        <main className="mt-6 sm:mt-8">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-4">
+            <aside className="order-2 space-y-4 border-t border-[#E5E7EB] pt-6 dark:border-[#4B5563] md:order-1 md:space-y-6 md:border-0 md:pt-0 lg:col-span-1 lg:border-r lg:pr-6">
               <div>
                 <h3 className="font-display text-lg font-semibold mb-2">U.S.</h3>
                 <ul className="space-y-1 text-sm">
@@ -74,13 +71,13 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                 <a className="hover:underline block" href="#">Subscribe</a>
               </div>
 
-              <div className="mt-10 pt-6 border-t border-[#E5E7EB] dark:border-[#4B5563]">
+              <div className="md:mt-10 md:pt-6 md:border-t md:border-[#E5E7EB] md:dark:border-[#4B5563]">
                 <div className="text-center">
-                  <span className="font-display text-3xl font-semibold tracking-[0.4em] uppercase text-gray-500 dark:text-gray-400">
+                  <span className="font-display text-2xl font-semibold tracking-[0.35em] uppercase text-gray-500 dark:text-gray-400 sm:text-3xl sm:tracking-[0.4em]">
                     NO. 01
                   </span>
                 </div>
-                <div className="mt-6 space-y-6 text-sm">
+                <div className="mt-4 space-y-5 text-sm sm:mt-6 sm:space-y-6">
                   <article>
                     <h4 className="font-display text-lg font-semibold text-[#1F2937] dark:text-gray-100">Story told by the Church Beadle</h4>
                     <p className="mt-2 leading-relaxed text-gray-600 dark:text-gray-300">
@@ -103,9 +100,9 @@ export const Slide = (_props: SlideProps): JSX.Element => {
               </div>
             </aside>
 
-            <div className="col-span-1 md:col-span-3">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
+            <div className="order-1 lg:col-span-3">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <div className="space-y-8 lg:col-span-2">
                   <section>
                     <h2 className="font-display text-4xl font-bold mb-4">Your principles are living things</h2>
                     <p className="text-lg mb-6">
@@ -113,7 +110,7 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                     </p>
 
                     <div className="space-y-6">
-                      <div className="flex items-start space-x-4">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <span className="text-xl font-bold font-display">"</span>
                         <div>
                           <p>
@@ -123,7 +120,7 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                         </div>
                       </div>
 
-                      <div className="flex items-start space-x-4">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <span className="text-xl font-bold font-display">"</span>
                         <div>
                           <p>
@@ -134,7 +131,7 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6 mt-8 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="mt-8 grid grid-cols-1 gap-6 text-xs text-gray-500 dark:text-gray-400 sm:grid-cols-2">
                       <div>
                         <p className="font-bold">#1 The crisis we find ourselves in has been decades in the making.</p>
                         <p className="mt-1">Kierkegaard</p>
@@ -156,8 +153,8 @@ export const Slide = (_props: SlideProps): JSX.Element => {
 
                   <div className="border-t border-[#D1D5DB] dark:border-[#374151] pt-10">
                     <div className="border border-[#E5E7EB] dark:border-[#4B5563] bg-[#FAFAF5] dark:bg-[#111827] px-8 py-10 text-center">
-                      <h3 className="font-display text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-200">For Those Who Seek to Understand</h3>
-                      <form className="mt-6 mx-auto flex max-w-xl flex-col items-center gap-3 sm:flex-row" onSubmit={handleRumorSubmit}>
+                      <h3 className="font-display text-xl font-semibold tracking-wide text-gray-600 dark:text-gray-200 sm:text-2xl">For Those Who Seek to Understand</h3>
+                      <form className="mx-auto mt-6 flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row" onSubmit={handleRumorSubmit}>
                         <div className="relative w-full sm:flex-1">
                           <input
                             aria-label="Rumor submission"
@@ -228,7 +225,7 @@ export const Slide = (_props: SlideProps): JSX.Element => {
           </div>
         </main>
 
-        <footer className="mt-8 border-t border-[#E5E7EB] dark:border-[#4B5563] pt-4 text-xs text-gray-500 dark:text-gray-400 overflow-x-auto whitespace-nowrap">
+        <footer className="mt-10 overflow-x-auto whitespace-nowrap border-t border-[#E5E7EB] pt-4 text-[10px] text-gray-500 dark:border-[#4B5563] dark:text-gray-400 sm:mt-12 sm:text-xs">
           <p>
             The Demyst Times - Home Page - Arts - National Portrait Gallery - News - The Last Day at the Races - NPG's Exhibition Features - National Portrait Gallery
           </p>

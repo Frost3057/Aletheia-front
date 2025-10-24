@@ -226,8 +226,8 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 
 	return (
 		<div className="min-h-screen bg-[#FDFBF7] text-[#1F2937] dark:bg-[#1F2937] dark:text-[#F3F4F6] font-body">
-			<div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-16 pt-10 sm:px-6 lg:px-10">
-				<header className="flex flex-col gap-6 border-b border-slate-300/40 pb-6 dark:border-slate-700/60 md:flex-row md:items-center md:justify-between">
+			<div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-10">
+				<header className="flex flex-col gap-4 border-b border-slate-300/40 pb-6 dark:border-slate-700/60 sm:gap-6 md:flex-row md:items-center md:justify-between">
 					<button
 						className="inline-flex items-center gap-2 rounded-sm border border-[#1F2937]/20 bg-white/80 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-[#1F2937] transition hover:-translate-y-0.5 hover:bg-white dark:border-white/15 dark:bg-white/10 dark:text-[#E5E7EB]"
 						onClick={onBackClick}
@@ -237,7 +237,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 						Front Page
 					</button>
 
-					<div className="flex flex-col text-right">
+					<div className="flex flex-col text-left md:text-right">
 						<span className="text-xs uppercase tracking-[0.35em] text-slate-600 dark:text-slate-300">Investigation Query</span>
 						<span className="font-display text-2xl text-[#0F172A] dark:text-white">{hasQuery ? searchQuery : "Awaiting Submission"}</span>
 						<span className="text-sm text-slate-600/80 dark:text-slate-300/80">
@@ -247,7 +247,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 				</header>
 
 				{!hasQuery && (
-					<section className="mt-10 border border-amber-200/80 bg-amber-50/70 p-8 text-amber-900 shadow-sm backdrop-blur-md dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-100">
+					<section className="mt-10 border border-amber-200/80 bg-amber-50/70 p-6 text-amber-900 shadow-sm backdrop-blur-md dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-100 sm:p-8">
 						<h2 className="font-display text-2xl">No brief to investigate yet</h2>
 						<p className="mt-2 text-sm leading-relaxed">
 							Provide a query from the front page to generate a full investigative digest.
@@ -260,7 +260,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 						{requestState === "loading" && <LoadingSkeleton />}
 
 						{requestState === "error" && (
-							<section className="border border-rose-200/80 bg-rose-50/80 p-8 text-rose-900 shadow-sm backdrop-blur-md dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100">
+							<section className="border border-rose-200/80 bg-rose-50/80 p-6 text-rose-900 shadow-sm backdrop-blur-md dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-100 sm:p-8">
 								<h2 className="font-display text-3xl">Unable to file this report</h2>
 								<p className="mt-2 text-sm leading-relaxed opacity-85">
 									{errorMessage ?? "An unexpected error occurred while assembling the report."}
@@ -286,8 +286,8 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 
 						{requestState === "resolved" && reportData && (
 							<div className="space-y-10">
-								<section className="border border-slate-200/80 bg-white/80 p-8 shadow-md backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30">
-									<div className="flex flex-col gap-8 lg:flex-row">
+								<section className="border border-slate-200/80 bg-white/80 p-6 shadow-md backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30 sm:p-8">
+									<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
 										<div className="flex-1 space-y-4">
 											<h2 className="font-display text-3xl text-[#0F172A] dark:text-white">Executive Overview</h2>
 											<p className="text-lg leading-relaxed text-[#111827]/80 dark:text-[#E5E7EB]/85">
@@ -300,7 +300,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 											</div>
 										</div>
 
-										<div className="w-full max-w-sm border border-slate-900/10 bg-[#111827] p-6 text-white shadow-md dark:border-white/15 dark:bg-white/10 dark:text-[#F8FAFC]">
+										<div className="w-full max-w-sm self-center border border-slate-900/10 bg-[#111827] p-6 text-white shadow-md dark:border-white/15 dark:bg-white/10 dark:text-[#F8FAFC] lg:self-auto">
 											<h3 className="font-display text-2xl">Model Verdict</h3>
 											<p className="mt-2 text-sm leading-relaxed text-white/80 dark:text-[#F8FAFC]/85">
 												{reportData.Model_score.Key_features_influencing_decision || "No feature explanations were provided for this decision."}
@@ -340,7 +340,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 								</section>
 
 								<section className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-									<article className="lg:col-span-3 space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30">
+									<article className="space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30 lg:col-span-3">
 										<h3 className="font-display text-2xl">Bias &amp; Sentiment Dispatch</h3>
 										<p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 											Analysis indicates a <span className="font-semibold text-[#0F172A] dark:text-white">{reportData.Bias_sentiment_report.bias_classification}</span> stance with the following sentiment palette.
@@ -361,7 +361,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 										</div>
 									</article>
 
-									<article className="lg:col-span-2 space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30">
+									<article className="space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30 lg:col-span-2">
 										<h3 className="font-display text-2xl">Manipulation Watchlist</h3>
 										<ul className="space-y-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
 											{reportData.manupulation_techniques.length > 0 ? (
@@ -386,7 +386,7 @@ export const Report = ({ onBackClick, onReady, prefetchedData, searchQuery, user
 								</section>
 
 								<section className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-									<article className="lg:col-span-3 space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30">
+									<article className="space-y-4 border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30 lg:col-span-3">
 										<h3 className="font-display text-2xl">Citations &amp; Provenance</h3>
 										<ul className="space-y-4 text-sm text-[#111827]/80 dark:text-[#E5E7EB]/85">
 											{reportData.citations.length > 0 ? (
