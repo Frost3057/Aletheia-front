@@ -174,9 +174,8 @@ export const generateAnalysis = async (query: string, userType: "normal" | "jour
     return structuredData;
   } catch (error) {
     console.error('Error generating analysis:', error);
-    // Return mock data as fallback
-    console.log('Falling back to mock data');
-    return getMockAnalysis('normal');
+    const message = error instanceof Error ? error.message : 'Unable to generate analysis.';
+    throw new Error(message);
   }
 };
 
@@ -265,13 +264,8 @@ export const generateReport = async (
     };
   } catch (error) {
     console.error('Error generating report:', error);
-    // Return mock data as fallback
-    console.log('Falling back to mock data');
-    return {
-      report: getMockAnalysis('journalist'),
-      metadata: null,
-      message: error instanceof Error ? error.message : 'Mock data fallback',
-    };
+    const message = error instanceof Error ? error.message : 'Unable to generate report.';
+    throw new Error(message);
   }
 };
 
@@ -333,59 +327,3 @@ const getMockArticles = (limit: number): Article[] => {
   return mockArticles.slice(0, limit);
 };
 
-const getMockAnalysis = (userType: 'normal' | 'journalist'): AnalysisResponse => {
-  if (userType === 'normal') {
-    return {
-      author_cred_score: 75,
-      source_reliablity_score: 68,
-      citations: [
-        "Climate Change 2023: Synthesis Report. IPCC, 2023.",
-        "Global Economic Impact of Climate Change. World Bank, 2022.",
-        "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-      ],
-      Bias_sentiment_report: {
-        sentiment_distribution: ["Neutral", "Concern"],
-        bias_classification: "Moderate Left-leaning"
-      },
-      evidence_based_contradictions: "The article presents strong data on climate impacts but may underestimate technological solutions that could mitigate some negative effects.",
-      manupulation_techniques: [
-        "Cherry-picking of data points",
-        "Appeal to fear scenarios"
-      ],
-      Model_score: {
-        Confidence_score: 82,
-        Key_features_influencing_decision: "High-quality scientific citations and transparent methodology, but limited perspective on solutions."
-      },
-      general_overview: "This analysis shows the content has strong factual grounding with credible sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive solutions.",
-      tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification"]
-    };
-  } else {
-    // Journalist detailed data
-    return {
-      author_cred_score: 75,
-      source_reliablity_score: 68,
-      citations: [
-        "Climate Change 2023: Synthesis Report. IPCC, 2023. https://www.ipcc.ch/report/ar6/syr/",
-        "Global Economic Impact of Climate Change. World Bank, 2022. https://www.worldbank.org/climate-report",
-        "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-      ],
-      Bias_sentiment_report: {
-        sentiment_distribution: ["Neutral", "Concern", "Urgency"],
-        bias_classification: "Moderate Left-leaning"
-      },
-      evidence_based_contradictions: "While the article presents compelling data on climate impacts, it understates the role of technological innovation in mitigation efforts. Recent studies show renewable energy costs have dropped 70% faster than predicted, which contradicts the pessimistic timeline presented.",
-      manupulation_techniques: [
-        "Cherry-picking of data points",
-        "Appeal to fear through catastrophic scenarios", 
-        "False dichotomy between economic growth and environmental protection",
-        "Selective citation of studies"
-      ],
-      Model_score: {
-        Confidence_score: 82,
-        Key_features_influencing_decision: "High-quality scientific citations, peer-reviewed sources, transparent methodology, but limited perspective on technological solutions and economic adaptation strategies."
-      },
-      general_overview: "This analysis examines claims about climate change impacts on the global economy. The content demonstrates strong factual grounding with credible scientific sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive capacity and technological solutions. The author's credentials are solid, and the source reliability is above average.",
-      tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification", "Source Credibility Assessment", "Citation Analysis"]
-    };
-  }
-};

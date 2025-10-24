@@ -154,34 +154,36 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                     </div>
                   </section>
 
-                  <div className="border border-[#E5E7EB] dark:border-[#4B5563] bg-[#FAFAF5] dark:bg-[#111827] px-8 py-10 text-center">
-                    <h3 className="font-display text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-200">For Those Who Seek to Understand</h3>
-                    <form className="mt-6 mx-auto flex max-w-xl flex-col items-center gap-3 sm:flex-row" onSubmit={handleRumorSubmit}>
-                      <div className="relative w-full sm:flex-1">
-                        <input
-                          aria-label="Rumor submission"
-                          className="w-full border border-[#D1D5DB] dark:border-[#374151] bg-white/80 dark:bg-[#1F2937] px-4 py-2 text-center text-base text-[#1F2937] dark:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#374151]/40"
-                          placeholder="Any rumors?.. Type it out here."
-                          style={{ fontFamily: '"Instrument Serif", serif', lineHeight: "21px" }}
-                          value={rumorQuery}
-                          onChange={(event) => setRumorQuery(event.target.value)}
-                          type="text"
+                  <div className="border-t border-[#D1D5DB] dark:border-[#374151] pt-10">
+                    <div className="border border-[#E5E7EB] dark:border-[#4B5563] bg-[#FAFAF5] dark:bg-[#111827] px-8 py-10 text-center">
+                      <h3 className="font-display text-2xl font-semibold tracking-wide text-gray-600 dark:text-gray-200">For Those Who Seek to Understand</h3>
+                      <form className="mt-6 mx-auto flex max-w-xl flex-col items-center gap-3 sm:flex-row" onSubmit={handleRumorSubmit}>
+                        <div className="relative w-full sm:flex-1">
+                          <input
+                            aria-label="Rumor submission"
+                            className="w-full border border-[#D1D5DB] dark:border-[#374151] bg-white/80 dark:bg-[#1F2937] px-4 py-2 text-center text-base text-[#1F2937] dark:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#374151]/40"
+                            placeholder="Any rumors?.. Type it out here."
+                            style={{ fontFamily: '"Instrument Serif", serif', lineHeight: "21px" }}
+                            value={rumorQuery}
+                            onChange={(event) => setRumorQuery(event.target.value)}
+                            type="text"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <button
+                          className="w-full sm:w-auto border border-[#374151] bg-[#1F2937] px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#F3F4F6] dark:bg-[#F3F4F6] dark:text-[#1F2937] dark:hover:bg-[#E5E7EB]"
+                          type="submit"
                           disabled={isSubmitting}
-                        />
-                      </div>
-                      <button
-                        className="w-full sm:w-auto border border-[#374151] bg-[#1F2937] px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#F3F4F6] dark:bg-[#F3F4F6] dark:text-[#1F2937] dark:hover:bg-[#E5E7EB]"
-                        type="submit"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? "Submitting..." : "Submit"}
-                      </button>
-                    </form>
-                    {submissionError && (
-                      <p className="mt-3 text-sm text-rose-600 dark:text-rose-400" role="alert">
-                        {submissionError}
-                      </p>
-                    )}
+                        >
+                          {isSubmitting ? "Submitting..." : "Submit"}
+                        </button>
+                      </form>
+                      {submissionError && (
+                        <p className="mt-3 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                          {submissionError}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
