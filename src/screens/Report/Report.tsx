@@ -1,890 +1,710 @@
-import React, { useState, useEffect } from "react";
-import { generateReport, AnalysisResponse } from "../../services/api";
+import { useCallback, useEffect, useMemo, useState } from "react";import { useEffect, useState } from "react";
 
-export type UserType = "normal" | "journalist";
+import type { UserType } from "../Slide";import { AnalysisResponse, generateReport } from "../../services/api";
 
-interface ReportProps {
-  userType?: UserType;
-  searchQuery?: string;
-  onBackClick?: () => void;
-}
+import { AnalysisResponse, generateAnalysis, generateReport } from "../../services/api";const getBiasTone = (bias: string): string => {
 
-// Mock data structure for Normal Users (simplified)
-const normalUserData = {
-  author_cred_score: 75,
-  source_reliablity_score: 68,
-  citations: [
-    "Climate Change 2023: Synthesis Report. IPCC, 2023.",
-    "Global Economic Impact of Climate Change. World Bank, 2022.",
-    "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-  ],
-  Bias_sentiment_report: {
-    sentiment_distribution: ["Neutral", "Concern"],
-    bias_classification: "Moderate Left-leaning"
-  },
-  evidence_based_contradictions: "The article presents strong data on climate impacts but may underestimate technological solutions that could mitigate some negative effects.",
-  manupulation_techniques: [
-    "Cherry-picking of data points",
-    "Appeal to fear scenarios"
-  ],
-  Model_score: {
-    Confidence_score: 82,
-    Key_features_influencing_decision: "High-quality scientific citations and transparent methodology, but limited perspective on solutions."
-  },
-  general_overview: "This analysis shows the content has strong factual grounding with credible sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive solutions.",
-  tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification"]
-};
+  const normalized = bias.toLowerCase();
 
-// Mock data structure for Journalists (detailed)
-const journalistData = {
-  author_cred_score: 75,
-  source_reliablity_score: 68,
-  citations: [
-    "Climate Change 2023: Synthesis Report. IPCC, 2023. https://www.ipcc.ch/report/ar6/syr/",
-    "Global Economic Impact of Climate Change. World Bank, 2022. https://www.worldbank.org/climate-report",
-    "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-  ],
-  Bias_sentiment_report: {
-    sentiment_distribution: ["Neutral", "Concern", "Urgency"],
-    bias_classification: "Moderate Left-leaning"
-  },
-  evidence_based_contradictions: "While the article presents compelling data on climate impacts, it understates the role of technological innovation in mitigation efforts. Recent studies show renewable energy costs have dropped 70% faster than predicted, which contradicts the pessimistic timeline presented.",
-  manupulation_techniques: [
-    "Cherry-picking of data points",
-    "Appeal to fear through catastrophic scenarios", 
-    "False dichotomy between economic growth and environmental protection",
-    "Selective citation of studies"
-  ],
-  Model_score: {
-    Confidence_score: 82,
-    Key_features_influencing_decision: "High-quality scientific citations, peer-reviewed sources, transparent methodology, but limited perspective on technological solutions and economic adaptation strategies."
-  },
-  general_overview: "This analysis examines claims about climate change impacts on the global economy. The content demonstrates strong factual grounding with credible scientific sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive capacity and technological solutions. The author's credentials are solid, and the source reliability is above average.",
-  tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification", "Source Credibility Assessment", "Citation Analysis"]
-};
+interface ReportProps {  if (normalized.includes("left")) return "bg-[#E0E7FF] text-[#3730A3]";
 
-// Helper function for bias color coding
-const getBiasColor = (bias: string): string => {
-  if (bias.toLowerCase().includes('left')) return '#4F46E5';
-  if (bias.toLowerCase().includes('right')) return '#DC2626';
-  if (bias.toLowerCase().includes('neutral')) return '#059669';
-  return '#6B7280';
-};
+  searchQuery: string;  if (normalized.includes("right")) return "bg-[#FEE2E2] text-[#B91C1C]";
 
-export const Report = ({ userType = "normal", searchQuery = "Climate change impacts on global economy", onBackClick }: ReportProps): JSX.Element => {
-  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  userType: UserType;  if (normalized.includes("neutral")) return "bg-[#DCFCE7] text-[#166534]";
 
-  // Fetch analysis data on component mount
-  useEffect(() => {
-    const loadAnalysis = async () => {
-      try {
-        setLoading(true);
-        // Use generate-report endpoint for detailed journalist analysis
-        const analysis = await generateReport(searchQuery);
-        setAnalysisData(analysis);
+  onBackClick: () => void;  return "bg-[#E0E7FF] text-[#1F2937]";
+
+}};
+
+
+
+type RequestState = "idle" | "loading" | "resolved" | "error";const getScoreTone = (score: number): string => {
+
+  if (score >= 75) return "text-[#166534]";
+
+const clampPercentage = (value: number | undefined | null): number => {  if (score >= 50) return "text-[#B45309]";
+
+  if (typeof value !== "number" || Number.isNaN(value)) {  return "text-[#B91C1C]";
+
+    return 0;};
+
+  }
+
+const LoadingState = (): JSX.Element => (
+
+  return Math.min(100, Math.max(0, value));  <div className="space-y-10 animate-pulse">
+
+};    <div className="h-10 w-32 bg-[#E5E7EB] dark:bg-[#374151]" />
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+const parseCitation = (citation: string) => {      {Array.from({ length: 4 }).map((_, index) => (
+
+  const urlMatch = citation.match(/https?:\/\/\S+/);        <div
+
+          key={index}
+
+  if (!urlMatch) {          className="h-32 rounded-xl border border-[#E5E7EB] dark:border-[#374151] bg-white/60 dark:bg-[#111827]"
+
+    return { label: citation, url: undefined };        />
+
+  }      ))}
+
+    </div>
+
+  const url = urlMatch[0];    <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-8">
+
+  const label = citation.replace(url, "").trim();      <div className="h-80 rounded-xl border border-[#E5E7EB] dark:border-[#374151] bg-white/60 dark:bg-[#111827]" />
+
+      <div className="h-80 rounded-xl border border-[#E5E7EB] dark:border-[#374151] bg-white/60 dark:bg-[#111827]" />
+
+  return {    </div>
+
+    label: label.length > 0 ? label : url,  </div>
+
+    url,);
+
+  };
+
+};export const Report = ({
+
+  userType = "normal",
+
+export const Report = (props: ReportProps): JSX.Element => {  searchQuery = "Climate change impacts on global economy",
+
+  const { onBackClick, searchQuery, userType } = props;  onBackClick
+
+  const [reportData, setReportData] = useState<AnalysisResponse | null>(null);}: ReportProps): JSX.Element => {
+
+  const [requestState, setRequestState] = useState<RequestState>("idle");  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);  const [loading, setLoading] = useState<boolean>(true);
+
+
+
+  const loadReport = useCallback(async () => {  useEffect(() => {
+
+    if (!searchQuery) {    const fetchAnalysis = async () => {
+
+      setReportData(null);      try {
+
+      setRequestState("idle");        setLoading(true);
+
+      return;        const response = await generateReport(searchQuery);
+
+    }        setAnalysisData(response);
+
       } catch (error) {
-        console.error('Error loading analysis:', error);
-        // Fallback to mock data
-        setAnalysisData(journalistData);
+
+    setRequestState("loading");        console.error("Error loading analysis:", error);
+
+    setErrorMessage(null);        setAnalysisData(userType === "journalist" ? journalistData : normalUserData);
+
       } finally {
-        setLoading(false);
-      }
-    };
 
-    loadAnalysis();
-  }, [searchQuery, userType]);
+    try {        setLoading(false);
 
-  // Select appropriate data based on user type and API response
-  const data = analysisData || (userType === "journalist" ? journalistData : normalUserData);
-  return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <h1 
-                className="text-black"
-                style={{
-                  fontFamily: 'Hubot Sans SemiCondensed, sans-serif',
-                  fontWeight: 600,
-                  fontStyle: 'italic',
-                  fontSize: '64px',
-                  lineHeight: '1.1',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
-              >
-                Aletheia
-              </h1>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6 flex-shrink-0">
-            <h2 
-              className="text-black text-right max-w-sm"
-              style={{
-                fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                fontWeight: 600,
-                fontSize: '16px',
-                lineHeight: '1.2',
-                letterSpacing: '0%',
-                color: '#000000'
-              }}
-            >
-              Navigating a World of Shifting Trends And Traditions
-            </h2>
-            <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 rounded-full bg-green-50 border border-green-200">
-              <svg width="32" height="32" viewBox="0 0 202 202" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.1017 137.212C14.2889 130.62 24.3651 118.704 43.1622 106.986" stroke="#46E556" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M144.648 63.6906C166.308 59.0582 181.689 59.2042 184.502 65.7975" stroke="#46E556" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M100.802 159.404C132.779 159.404 158.701 133.482 158.701 101.505C158.701 69.5281 132.779 43.6057 100.802 43.6057C68.8252 43.6057 42.9028 69.5281 42.9028 101.505C42.9028 133.482 68.8252 159.404 100.802 159.404Z" stroke="#212529" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M80.6029 100.418C88.7625 100.418 95.3772 93.8035 95.3772 85.6439C95.3772 77.4843 88.7625 70.8696 80.6029 70.8696C72.4433 70.8696 65.8286 77.4843 65.8286 85.6439C65.8286 93.8035 72.4433 100.418 80.6029 100.418Z" stroke="#212529" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M126.956 85.6434C131.036 85.6434 134.344 82.3361 134.344 78.2563C134.344 74.1765 131.036 70.8691 126.956 70.8691C122.877 70.8691 119.569 74.1765 119.569 78.2563C119.569 82.3361 122.877 85.6434 126.956 85.6434Z" stroke="#212529" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M108.274 147.853C111.175 147.853 113.527 145.501 113.527 142.6C113.527 139.699 111.175 137.346 108.274 137.346C105.372 137.346 103.02 139.699 103.20 142.6C103.20 145.501 105.372 147.853 108.274 147.853Z" stroke="#212529" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M17.1045 137.214C21.8919 148.44 63.2463 141.552 109.474 121.832C115.812 119.13 121.912 116.322 127.705 113.469" stroke="#46E556" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M145.157 104.197C171.665 89.0017 187.936 73.8416 184.502 65.797" stroke="#46E556" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M136.482 118.814C141.939 118.814 146.362 114.391 146.362 108.934C146.362 103.477 141.939 99.0537 136.482 99.0537C131.025 99.0537 126.602 103.477 126.602 108.934C126.602 114.391 131.025 118.814 136.482 118.814Z" stroke="#46E556" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        </div>
+      const data = userType === "journalist"      }
 
-        {/* Navigation */}
-        <div className="space-y-1 mb-6 w-full">
-          {/* Home bar */}
-          <div 
-            className="flex items-center justify-between w-full"
-            style={{
-              border: '2px solid #212529',
-              height: '50px',
-              padding: '0 20px'
-            }}
-          >
-            <button
-              onClick={onBackClick}
-              className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-              style={{
-                fontFamily: 'Hubot Sans, sans-serif',
-                fontWeight: 400,
-                fontSize: '16px',
-                lineHeight: '1.4',
-                color: '#212529',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back to Home
-            </button>
-            <div className="flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12.2517 24.2714C14.9124 24.2714 17.3659 23.4193 19.3733 21.9989L26.9251 29.4792C27.2756 29.8264 27.7377 30 28.2315 30C29.2671 30 30 29.2109 30 28.2009C30 27.7275 29.8407 27.2699 29.4902 26.9385L21.9862 19.4897C23.5635 17.4382 24.5035 14.8974 24.5035 12.1357C24.5035 5.46028 18.991 0 12.2517 0C5.52841 0 0 5.4445 0 12.1357C0 18.8112 5.51248 24.2714 12.2517 24.2714ZM12.2517 21.6518C6.99416 21.6518 2.64472 17.3435 2.64472 12.1357C2.64472 6.92793 6.99416 2.61967 12.2517 2.61967C17.5093 2.61967 21.8587 6.92793 21.8587 12.1357C21.8587 17.3435 17.5093 21.6518 12.2517 21.6518Z" fill="#212529"/>
-              </svg>
-              <span 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 400,
-                  fontSize: '16px',
-                  lineHeight: '1.4',
-                  color: '#212529'
-                }}
-              >
-                What are you looking for ?
-              </span>
-            </div>
-          </div>
-        </div>
+        ? await generateReport(searchQuery)    };
 
-        {/* Report Analysis Content */}
-        <div className="space-y-6">
-          {/* Executive Summary - Top Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Overall Score */}
-            <div 
-              className="p-4 rounded-lg text-center"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div 
-                className="text-3xl font-bold mb-1"
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  color: '#46E556'
-                }}
-              >
-                {Math.round((data.author_cred_score + data.source_reliablity_score) / 2)}
-              </div>
-              <div 
-                style={{
-                  fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '1.2',
-                  letterSpacing: '0%',
-                  color: '#666666'
-                }}
-              >
-                Overall Score
-              </div>
-            </div>
+        : await generateAnalysis(searchQuery);
 
-            {/* Author Score */}
-            <div 
-              className="p-4 rounded-lg text-center"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div 
-                className="text-3xl font-bold mb-1"
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  color: data.author_cred_score >= 70 ? '#46E556' : data.author_cred_score >= 40 ? '#FFA500' : '#FF4444'
-                }}
-              >
-                {data.author_cred_score}
-              </div>
-              <div 
-                style={{
-                  fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '1.2',
-                  letterSpacing: '0%',
-                  color: '#666666'
-                }}
-              >
-                Author Credibility
-              </div>
-            </div>
+    fetchAnalysis();
 
-            {/* Source Score */}
-            <div 
-              className="p-4 rounded-lg text-center"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div 
-                className="text-3xl font-bold mb-1"
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  color: data.source_reliablity_score >= 70 ? '#46E556' : data.source_reliablity_score >= 40 ? '#FFA500' : '#FF4444'
-                }}
-              >
-                {data.source_reliablity_score}
-              </div>
-              <div 
-                style={{
-                  fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '1.2',
-                  letterSpacing: '0%',
-                  color: '#666666'
-                }}
-              >
-                Source Reliability
-              </div>
-            </div>
+      setReportData(data);  }, [searchQuery, userType]);
 
-            {/* Confidence */}
-            <div 
-              className="p-4 rounded-lg text-center"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div 
-                className="text-3xl font-bold mb-1"
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  color: '#4F46E5'
-                }}
-              >
-                {data.Model_score.Confidence_score}%
-              </div>
-              <div 
-                style={{
-                  fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '1.2',
-                  letterSpacing: '0%',
-                  color: '#666666'
-                }}
-              >
-                AI Confidence
-              </div>
-            </div>
-          </div>
+      setRequestState("resolved");
 
-          {/* Key Findings Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Bias & Sentiment Analysis - Complete */}
-            <div 
-              className="p-6 rounded-lg"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L14.09 8.26L22 9.27L17 14.14L18.18 22.02L12 18.77L5.82 22.02L7 14.14L2 9.27L9.91 8.26L12 2Z" fill="#4F46E5"/>
-                  </svg>
-                </div>
-                <h3 
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 600,
-                    fontSize: '24px',
-                    lineHeight: '1.4',
-                    letterSpacing: '0%',
-                    color: '#212529'
-                  }}
-                >
-                  Bias & Sentiment Report
-                </h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 
-                    style={{
-                      fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '16px',
-                      lineHeight: '1.2',
-                      letterSpacing: '0%',
-                      color: '#212529',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    Bias Classification
-                  </h4>
-                  <span 
-                    className="px-3 py-1 rounded-full text-sm"
-                    style={{
-                      background: getBiasColor(data.Bias_sentiment_report.bias_classification),
-                      color: '#FFFFFF',
-                      fontFamily: 'Hubot Sans, sans-serif',
-                      fontWeight: 500
-                    }}
-                  >
-                    {data.Bias_sentiment_report.bias_classification}
-                  </span>
-                </div>
+    } catch (error) {  const data = analysisData || (userType === "journalist" ? journalistData : normalUserData);
 
-                <div>
-                  <h4 
-                    style={{
-                      fontFamily: 'Hubot Sans SemiExpanded, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '16px',
-                      lineHeight: '1.2',
-                      letterSpacing: '0%',
-                      color: '#212529',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    Sentiment Distribution
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {data.Bias_sentiment_report.sentiment_distribution.map((sentiment: string, index: number) => (
-                      <span 
-                        key={index}
-                        className="px-2 py-1 rounded text-xs"
-                        style={{
-                          background: '#F0F0F0',
-                          color: '#212529',
-                          fontFamily: 'Hubot Sans, sans-serif',
-                          fontWeight: 400
-                        }}
-                      >
-                        {sentiment}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+      setErrorMessage(error instanceof Error ? error.message : "Unable to generate report. Please try again.");  const overallScore = Math.round((data.author_cred_score + data.source_reliablity_score) / 2);
 
-            {/* Model Scores - Complete */}
-            <div 
-              className="p-6 rounded-lg"
-              style={{
-                background: '#FFFFFF',
-                border: '2px solid #E5E5E5',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.5 2C8.67 2 8 2.67 8 3.5V5L7 7V21C7 21.55 7.45 22 8 22H16C16.55 22 17 21.55 17 21V7L16 5V3.5C16 2.67 15.33 2 14.5 2H9.5ZM10 4H14V5H10V4ZM10 8H14V9H10V8ZM10 11H14V12H10V11ZM10 14H14V15H10V14Z" fill="#7C3AED"/>
-                  </svg>
-                </div>
-                <h3 
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 600,
-                    fontSize: '24px',
-                    lineHeight: '1.4',
-                    letterSpacing: '0%',
-                    color: '#212529'
-                  }}
-                >
-                  Model Analysis
-                </h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 
-                    style={{
-                      fontFamily: 'Hubot Sans, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      lineHeight: '1.4',
-                      color: '#212529',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    Confidence Score
-                  </h4>
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="text-2xl font-bold"
-                      style={{
-                        fontFamily: 'Hubot Sans, sans-serif',
-                        color: data.Model_score.Confidence_score >= 70 ? '#46E556' : data.Model_score.Confidence_score >= 40 ? '#FFA500' : '#FF4444'
-                      }}
-                    >
-                      {data.Model_score.Confidence_score}%
-                    </div>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full"
-                        style={{
-                          width: `${data.Model_score.Confidence_score}%`,
-                          background: data.Model_score.Confidence_score >= 70 ? '#46E556' : data.Model_score.Confidence_score >= 40 ? '#FFA500' : '#FF4444'
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+      setRequestState("error");
 
-                <div>
-                  <h4 
-                    style={{
-                      fontFamily: 'Hubot Sans, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      lineHeight: '1.4',
-                      color: '#212529',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    Key Features
-                  </h4>
-                  <p 
-                    style={{
-                      fontFamily: 'Hubot Sans, sans-serif',
-                      fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '1.4',
-                      letterSpacing: '0%',
-                      color: '#666666'
-                    }}
-                  >
-                    {data.Model_score.Key_features_influencing_decision.length > 100 ? 
-                      data.Model_score.Key_features_influencing_decision.substring(0, 100) + '...' : 
-                      data.Model_score.Key_features_influencing_decision}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+    }  return (
 
-          {/* Evidence-Based Contradictions - Full Section */}
-          <div 
-            className="p-6 rounded-lg"
-            style={{
-              background: '#FFFFFF',
-              border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  lineHeight: '1.4',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
-              >
-                Evidence-Based Contradictions
-              </h3>
-            </div>
-            
-            <p 
-              style={{
-                fontFamily: 'Hubot Sans, sans-serif',
-                fontWeight: 400,
-                fontSize: '16px',
-                lineHeight: '1.6',
-                letterSpacing: '0%',
-                color: '#212529'
-              }}
-            >
-              {data.evidence_based_contradictions}
-            </p>
-          </div>
+  }, [searchQuery, userType]);    <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#1F2937] font-body text-[#1F2937] dark:text-[#F3F4F6] transition-colors duration-300">
 
-          {/* Manipulation Techniques - Enhanced */}
-          <div 
-            className="p-6 rounded-lg"
-            style={{
-              background: '#FFFFFF',
-              border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  lineHeight: '1.4',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
-              >
-                Manipulation Techniques Detected
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {data.manupulation_techniques.map((technique: string, index: number) => (
-                <div 
-                  key={index}
-                  className="flex items-start gap-3 p-3 rounded-lg"
-                  style={{
-                    background: '#FEF2F2',
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-10">
+
+  useEffect(() => {        };
+
+    let isCancelled = false;  );
+
+};
+
+    const fetchData = async () => {                  className="flex items-start gap-3 p-3 rounded-lg"
+
+      await loadReport();                  style={{
+
+    };                    background: '#FEF2F2',
+
                     border: '1px solid #FECACA'
-                  }}
-                >
-                  <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0"></div>
+
+    if (!isCancelled) {                  }}
+
+      void fetchData();                >
+
+    }                  <div className="w-2 h-2 rounded-full bg-red-400 mt-2 flex-shrink-0"></div>
+
                   <span 
-                    style={{
-                      fontFamily: 'Hubot Sans, sans-serif',
-                      fontWeight: 400,
-                      fontSize: '14px',
+
+    return () => {                    style={{
+
+      isCancelled = true;                      fontFamily: 'Hubot Sans, sans-serif',
+
+    };                      fontWeight: 400,
+
+  }, [loadReport]);                      fontSize: '14px',
+
                       lineHeight: '1.5',
-                      color: '#3E3E3E'
-                    }}
-                  >
-                    {technique}
+
+  const sentimentBadges = useMemo(() => {                      color: '#3E3E3E'
+
+    if (!reportData) {                    }}
+
+      return [];                  >
+
+    }                    {technique}
+
                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
+
+    return reportData.Bias_sentiment_report.sentiment_distribution.map((sentiment) => ({                </div>
+
+      id: sentiment,              ))}
+
+      label: sentiment,            </div>
+
+    }));          </div>
+
+  }, [reportData]);
 
           {/* Citations - Enhanced */}
-          <div 
-            className="p-6 rounded-lg"
-            style={{
-              background: '#FFFFFF',
+
+  const toolsUsed = useMemo(() => {          <div 
+
+    if (!reportData) {            className="p-6 rounded-lg"
+
+      return [];            style={{
+
+    }              background: '#FFFFFF',
+
               border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+
+    return reportData.tools_used.map((tool) => ({              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+
+      id: tool,            }}
+
+      label: tool,          >
+
+    }));            <div className="flex items-center gap-3 mb-4">
+
+  }, [reportData]);              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+  const statCards = useMemo(() => {                  <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+    if (!reportData) {                  <path d="M14 2V8H20" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+      return [];                  <path d="M16 13H8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+    }                  <path d="M16 17H8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
                   <path d="M10 9H9H8" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  lineHeight: '1.4',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
-              >
-                Citations & Sources
-              </h3>
-            </div>
-            
-            <div className="space-y-3">
-              {data.citations.map((citation: string, index: number) => (
-                <div 
-                  key={index}
-                  className="p-3 rounded-lg"
-                  style={{
-                    background: '#F9FAFB',
-                    border: '1px solid #E5E7EB'
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <span 
-                      className="px-2 py-1 rounded text-xs font-medium"
-                      style={{
-                        background: '#059669',
-                        color: '#FFFFFF',
-                        fontFamily: 'Hubot Sans, sans-serif',
-                        minWidth: '24px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {index + 1}
-                    </span>
-                    <span 
-                      style={{
-                        fontFamily: 'Hubot Sans, sans-serif',
-                        fontWeight: 400,
-                        fontSize: '14px',
-                        lineHeight: '1.5',
-                        color: '#3E3E3E'
-                      }}
-                    >
-                      {citation}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Evidence Summary Dashboard */}
-          <div 
+    return [                </svg>
+
+      {              </div>
+
+        id: "author",              <h3 
+
+        label: "Author Credibility",                style={{
+
+        value: `${Math.round(reportData.author_cred_score)} / 100`,                  fontFamily: 'Hubot Sans, sans-serif',
+
+        tone: "text-emerald-600 dark:text-emerald-400",                  fontWeight: 600,
+
+      },                  fontSize: '24px',
+
+      {                  lineHeight: '1.4',
+
+        id: "source",                  letterSpacing: '0%',
+
+        label: "Source Reliability",                  color: '#212529'
+
+        value: `${Math.round(reportData.source_reliablity_score)} / 100`,                }}
+
+        tone: "text-indigo-600 dark:text-indigo-400",              >
+
+      },                Citations & Sources
+
+      {              </h3>
+
+        id: "bias",            </div>
+
+        label: "Bias Classification",            
+
+        value: reportData.Bias_sentiment_report.bias_classification,            <div className="space-y-3">
+
+        tone: "text-amber-600 dark:text-amber-400",              {data.citations.map((citation: string, index: number) => (
+
+      },                <div 
+
+      {                  key={index}
+
+        id: "confidence",                  className="p-3 rounded-lg"
+
+        label: "Model Confidence",                  style={{
+
+        value: `${Math.round(reportData.Model_score.Confidence_score)}%`,                    background: '#F9FAFB',
+
+        tone: "text-rose-600 dark:text-rose-400",                    border: '1px solid #E5E7EB'
+
+      },                  }}
+
+    ];                >
+
+  }, [reportData]);                  <div className="flex items-start gap-3">
+
+                    <span 
+
+  return (                      className="px-2 py-1 rounded text-xs font-medium"
+
+    <div className="min-h-screen bg-[#F8F4EC] text-[#1F2937] dark:bg-[#0F172A] dark:text-[#E5E7EB] font-body">                      style={{
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">                        background: '#059669',
+
+        <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">                        color: '#FFFFFF',
+
+          <button                        fontFamily: 'Hubot Sans, sans-serif',
+
+            className="inline-flex w-max items-center gap-2 rounded-full border border-[#1F2937]/20 bg-white/70 px-4 py-2 text-sm font-semibold uppercase tracking-widest text-[#1F2937] transition hover:-translate-y-0.5 hover:bg-white dark:border-white/20 dark:bg-white/10 dark:text-[#E5E7EB]"                        minWidth: '24px',
+
+            onClick={onBackClick}                        textAlign: 'center'
+
+            type="button"                      }}
+
+          >                    >
+
+            <span aria-hidden className="text-lg">←</span>                      {index + 1}
+
+            Back to Front Page                    </span>
+
+          </button>                    <span 
+
+                      style={{
+
+          <div className="flex flex-col text-right">                        fontFamily: 'Hubot Sans, sans-serif',
+
+            <span className="text-xs uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Investigation Query</span>                        fontWeight: 400,
+
+            <span className="font-display text-xl md:text-2xl text-[#111827] dark:text-white">{searchQuery || "Untitled Inquiry"}</span>                        fontSize: '14px',
+
+            <span className="text-sm text-gray-500 dark:text-gray-400">Prepared for {userType === "journalist" ? "Investigative Journalist" : "Reader"}</span>                        lineHeight: '1.5',
+
+          </div>                        color: '#3E3E3E'
+
+        </header>                      }}
+
+                    >
+
+        {requestState === "loading" && (                      {citation}
+
+          <section className="space-y-6">                    </span>
+
+            <div className="h-44 rounded-2xl border border-black/5 bg-white/70 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.45)] backdrop-blur dark:border-white/10 dark:bg-white/10">                  </div>
+
+              <div className="animate-pulse space-y-4">                </div>
+
+                <div className="h-8 w-2/3 rounded bg-gray-200/70 dark:bg-white/10" />              ))}
+
+                <div className="h-4 w-full rounded bg-gray-200/70 dark:bg-white/10" />            </div>
+
+                <div className="h-4 w-5/6 rounded bg-gray-200/70 dark:bg-white/10" />          </div>
+
+                <div className="h-4 w-4/5 rounded bg-gray-200/70 dark:bg-white/10" />
+
+              </div>          {/* Evidence Summary Dashboard */}
+
+            </div>          <div 
+
             className="p-6 rounded-lg"
-            style={{
-              background: '#FFFFFF',
-              border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  lineHeight: '1.4',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
-              >
-                Analysis Summary
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div 
-                  className="text-2xl font-bold mb-1"
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    color: '#059669'
-                  }}
-                >
-                  {data.citations.length}
-                </div>
-                <div 
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    letterSpacing: '0%',
-                    color: '#666666'
-                  }}
-                >
-                  Citations
-                </div>
-              </div>
 
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div 
-                  className="text-2xl font-bold mb-1"
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">            style={{
+
+              {Array.from({ length: 4 }).map((_, index) => (              background: '#FFFFFF',
+
+                <div              border: '2px solid #E5E5E5',
+
+                  className="h-32 rounded-2xl border border-black/5 bg-white/70 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.45)] backdrop-blur dark:border-white/10 dark:bg-white/10"              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+
+                  key={`skeleton-${index}`}            }}
+
+                >          >
+
+                  <div className="animate-pulse space-y-3">            <div className="flex items-center gap-3 mb-4">
+
+                    <div className="h-4 w-1/2 rounded bg-gray-200/70 dark:bg-white/10" />              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+
+                    <div className="h-6 w-2/3 rounded bg-gray-200/70 dark:bg-white/10" />                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                  </div>                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+                </div>                </svg>
+
+              ))}              </div>
+
+            </div>              <h3 
+
+          </section>                style={{
+
+        )}                  fontFamily: 'Hubot Sans, sans-serif',
+
+                  fontWeight: 600,
+
+        {requestState === "error" && (                  fontSize: '24px',
+
+          <section className="rounded-2xl border border-rose-200 bg-rose-50/80 p-6 text-rose-900 dark:border-rose-400/40 dark:bg-rose-900/10 dark:text-rose-100">                  lineHeight: '1.4',
+
+            <h2 className="font-display text-2xl">Unable to produce the report</h2>                  letterSpacing: '0%',
+
+            <p className="mt-2 text-sm leading-relaxed opacity-80">{errorMessage ?? "An unexpected error occurred."}</p>                  color: '#212529'
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">                }}
+
+              <button              >
+
+                className="rounded-full border border-rose-900 bg-rose-800 px-4 py-2 text-sm font-semibold text-rose-50 transition hover:bg-rose-900 dark:border-rose-200 dark:bg-rose-500 dark:text-white"                Analysis Summary
+
+                onClick={loadReport}              </h3>
+
+                type="button"            </div>
+
+              >            
+
+                Retry            <div className="grid grid-cols-3 gap-4">
+
+              </button>              <div className="text-center p-4 bg-green-50 rounded-lg">
+
+              <button                <div 
+
+                className="rounded-full border border-transparent px-4 py-2 text-sm font-semibold text-rose-800 underline decoration-dashed underline-offset-4 dark:text-rose-200"                  className="text-2xl font-bold mb-1"
+
+                onClick={onBackClick}                  style={{
+
+                type="button"                    fontFamily: 'Hubot Sans, sans-serif',
+
+              >                    color: '#059669'
+
+                Choose a different query                  }}
+
+              </button>                >
+
+            </div>                  {data.citations.length}
+
+          </section>                </div>
+
+        )}                <div 
+
                   style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    color: '#4F46E5'
-                  }}
-                >
-                  {data.tools_used.length}
-                </div>
-                <div 
+
+        {requestState === "resolved" && reportData && (                    fontFamily: 'Hubot Sans, sans-serif',
+
+          <div className="space-y-10">                    fontWeight: 400,
+
+            <section className="rounded-2xl border border-black/5 bg-white/80 p-8 shadow-[0_25px_50px_-35px_rgba(30,41,59,0.65)] backdrop-blur-lg dark:border-white/10 dark:bg-white/5">                    fontSize: '14px',
+
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start">                    lineHeight: '1.4',
+
+                <div className="flex-1 space-y-4">                    letterSpacing: '0%',
+
+                  <h2 className="font-display text-3xl text-[#111827] dark:text-white">Executive Overview</h2>                    color: '#666666'
+
+                  <p className="text-lg leading-relaxed text-[#111827]/80 dark:text-[#E5E7EB]/90">                  }}
+
+                    {reportData.general_overview || "No executive overview provided for this report."}                >
+
+                  </p>                  Citations
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">                </div>
+
+                    <span>Model: {userType === "journalist" ? "Investigative" : "Reader"} Mode</span>              </div>
+
+                    <span>Scope: Comprehensive Audit</span>
+
+                    <span>Last refreshed: Just now</span>              <div className="text-center p-4 bg-blue-50 rounded-lg">
+
+                  </div>                <div 
+
+                </div>                  className="text-2xl font-bold mb-1"
+
                   style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    letterSpacing: '0%',
-                    color: '#666666'
-                  }}
-                >
-                  Tools Used
-                </div>
-              </div>
+
+                <div className="max-w-sm flex-1 rounded-xl border border-black/10 bg-[#111827] p-6 text-white shadow-lg dark:border-white/10 dark:bg-white/10 dark:text-[#F8FAFC]">                    fontFamily: 'Hubot Sans, sans-serif',
+
+                  <h3 className="font-display text-2xl">Model Verdict</h3>                    color: '#4F46E5'
+
+                  <p className="mt-2 text-sm leading-relaxed text-white/80 dark:text-[#F8FAFC]/80">                  }}
+
+                    {reportData.Model_score.Key_features_influencing_decision || "The system did not supply feature importance notes."}                >
+
+                  </p>                  {data.tools_used.length}
+
+                  <div className="mt-6 space-y-3">                </div>
+
+                    <div className="flex items-center justify-between text-sm font-semibold">                <div 
+
+                      <span>Confidence</span>                  style={{
+
+                      <span>{Math.round(clampPercentage(reportData.Model_score.Confidence_score))}%</span>                    fontFamily: 'Hubot Sans, sans-serif',
+
+                    </div>                    fontWeight: 400,
+
+                    <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/20">                    fontSize: '14px',
+
+                      <div                    lineHeight: '1.4',
+
+                        className="absolute inset-y-0 left-0 rounded-full bg-emerald-400"                    letterSpacing: '0%',
+
+                        style={{ width: `${clampPercentage(reportData.Model_score.Confidence_score)}%` }}                    color: '#666666'
+
+                      />                  }}
+
+                    </div>                >
+
+                  </div>                  Tools Used
+
+                </div>                </div>
+
+              </div>              </div>
+
+            </section>
 
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div 
-                  className="text-2xl font-bold mb-1"
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    color: '#DC2626'
-                  }}
-                >
-                  {data.manupulation_techniques.length}
-                </div>
-                <div 
-                  style={{
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    letterSpacing: '0%',
-                    color: '#666666'
-                  }}
-                >
-                  Issues Found
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* General Overview */}
-          <div 
-            className="p-6 rounded-lg"
-            style={{
-              background: '#F8F9FA',
-              border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">                <div 
+
+              {statCards.map((card) => (                  className="text-2xl font-bold mb-1"
+
+                <article                  style={{
+
+                  className="rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5"                    fontFamily: 'Hubot Sans, sans-serif',
+
+                  key={card.id}                    color: '#DC2626'
+
+                >                  }}
+
+                  <span className="text-xs uppercase tracking-[0.3em] text-gray-400">{card.label}</span>                >
+
+                  <p className={`mt-3 font-display text-3xl ${card.tone}`}>{card.value}</p>                  {data.manupulation_techniques.length}
+
+                </article>                </div>
+
+              ))}                <div 
+
+            </section>                  style={{
+
+                    fontFamily: 'Hubot Sans, sans-serif',
+
+            <section className="grid grid-cols-1 gap-6 lg:grid-cols-5">                    fontWeight: 400,
+
+              <article className="lg:col-span-3 space-y-4 rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5">                    fontSize: '14px',
+
+                <h3 className="font-display text-2xl">Bias & Sentiment Brief</h3>                    lineHeight: '1.4',
+
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">                    letterSpacing: '0%',
+
+                  The article leans toward <span className="font-semibold text-[#111827] dark:text-white">{reportData.Bias_sentiment_report.bias_classification}</span>. Sentiment samples recorded below.                    color: '#666666'
+
+                </p>                  }}
+
+                <div className="flex flex-wrap gap-2">                >
+
+                  {sentimentBadges.map((sentiment) => (                  Issues Found
+
+                    <span                </div>
+
+                      className="rounded-full border border-[#111827]/15 bg-[#111827]/5 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[#111827] transition dark:border-white/10 dark:bg-white/10 dark:text-white"              </div>
+
+                      key={sentiment.id}            </div>
+
+                    >          </div>
+
+                      {sentiment.label}
+
+                    </span>          {/* General Overview */}
+
+                  ))}          <div 
+
+                  {sentimentBadges.length === 0 && (            className="p-6 rounded-lg"
+
+                    <span className="text-sm text-gray-500 dark:text-gray-400">No sentiment distribution provided.</span>            style={{
+
+                  )}              background: '#F8F9FA',
+
+                </div>              border: '2px solid #E5E5E5',
+
+              </article>              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+
             }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <h3 
-                style={{
-                  fontFamily: 'Hubot Sans, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  lineHeight: '1.4',
-                  letterSpacing: '0%',
-                  color: '#212529'
-                }}
+
+              <article className="lg:col-span-2 space-y-4 rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5">          >
+
+                <h3 className="font-display text-2xl">Manipulation Watchlist</h3>            <div className="flex items-center gap-3 mb-4">
+
+                <ul className="space-y-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+
+                  {reportData.manupulation_techniques.length > 0 ? (                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+                    reportData.manupulation_techniques.map((technique) => (                  <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
+                      <li className="flex items-start gap-3" key={technique}>                </svg>
+
+                        <span className="mt-1 h-2 w-2 flex-none rounded-full bg-rose-400" />              </div>
+
+                        <span>{technique}</span>              <h3 
+
+                      </li>                style={{
+
+                    ))                  fontFamily: 'Hubot Sans, sans-serif',
+
+                  ) : (                  fontWeight: 600,
+
+                    <li>No manipulation patterns detected.</li>                  fontSize: '24px',
+
+                  )}                  lineHeight: '1.4',
+
+                </ul>                  letterSpacing: '0%',
+
+              </article>                  color: '#212529'
+
+            </section>                }}
+
               >
-                General Overview
-              </h3>
-            </div>
-            
-            <p 
-              style={{
+
+            <section className="rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5">                General Overview
+
+              <h3 className="font-display text-2xl">Evidence-Based Contradictions</h3>              </h3>
+
+              <p className="mt-3 text-base leading-relaxed text-gray-700 dark:text-gray-200">            </div>
+
+                {reportData.evidence_based_contradictions || "The system did not record any notable contradictions."}            
+
+              </p>            <p 
+
+            </section>              style={{
+
                 fontFamily: 'Hubot Sans, sans-serif',
-                fontWeight: 400,
-                fontSize: '16px',
-                lineHeight: '1.6',
-                letterSpacing: '0%',
-                color: '#212529'
-              }}
-            >
+
+            <section className="grid grid-cols-1 gap-6 lg:grid-cols-5">                fontWeight: 400,
+
+              <article className="lg:col-span-3 space-y-4 rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5">                fontSize: '16px',
+
+                <h3 className="font-display text-2xl">Citations & Provenance</h3>                lineHeight: '1.6',
+
+                <ul className="space-y-4">                letterSpacing: '0%',
+
+                  {reportData.citations.length > 0 ? (                color: '#212529'
+
+                    reportData.citations.map((citation, index) => {              }}
+
+                      const { label, url } = parseCitation(citation);            >
+
               {data.general_overview}
-            </p>
-          </div>
 
-          {/* Tools Used */}
-          <div 
-            className="p-6 rounded-lg"
-            style={{
-              background: '#FFFFFF',
-              border: '2px solid #E5E5E5',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <h3 
-              style={{
-                fontFamily: 'Hubot Sans, sans-serif',
-                fontWeight: 600,
-                fontSize: '24px',
-                lineHeight: '1.4',
-                letterSpacing: '0%',
-                color: '#212529',
-                marginBottom: '16px'
+                      return (            </p>
+
+                        <li className="flex flex-col gap-1 text-sm text-[#111827]/80 dark:text-[#E5E7EB]/80" key={`${citation}-${index}`}>          </div>
+
+                          <span>{label}</span>
+
+                          {url && (          {/* Tools Used */}
+
+                            <a          <div 
+
+                              className="w-max text-xs font-semibold uppercase tracking-[0.35em] text-indigo-600 underline decoration-dotted underline-offset-4 dark:text-indigo-300"            className="p-6 rounded-lg"
+
+                              href={url}            style={{
+
+                              rel="noopener noreferrer"              background: '#FFFFFF',
+
+                              target="_blank"              border: '2px solid #E5E5E5',
+
+                            >              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)'
+
+                              Visit source            }}
+
+                            </a>          >
+
+                          )}            <h3 
+
+                        </li>              style={{
+
+                      );                fontFamily: 'Hubot Sans, sans-serif',
+
+                    })                fontWeight: 600,
+
+                  ) : (                fontSize: '24px',
+
+                    <li className="text-sm text-gray-500 dark:text-gray-400">No citations were returned for this query.</li>                lineHeight: '1.4',
+
+                  )}                letterSpacing: '0%',
+
+                </ul>                color: '#212529',
+
+              </article>                marginBottom: '16px'
+
               }}
-            >
-              Analysis Tools Used
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {data.tools_used.map((tool: string, index: number) => (
-                <span 
-                  key={index}
-                  className="px-3 py-2 rounded-lg text-sm"
-                  style={{
-                    background: '#E5E7EB',
-                    color: '#374151',
-                    fontFamily: 'Hubot Sans, sans-serif',
-                    fontWeight: 500
-                  }}
-                >
-                  {tool}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Footer - Full Width */}
+              <article className="lg:col-span-2 space-y-4 rounded-2xl border border-black/5 bg-white/80 p-6 shadow-[0_20px_45px_-30px_rgba(17,24,39,0.55)] backdrop-blur dark:border-white/10 dark:bg-white/5">            >
+
+                <h3 className="font-display text-2xl">Tools Applied</h3>              Analysis Tools Used
+
+                <div className="flex flex-wrap gap-2">            </h3>
+
+                  {toolsUsed.length > 0 ? (            <div className="flex flex-wrap gap-2">
+
+                    toolsUsed.map((tool) => (              {data.tools_used.map((tool: string, index: number) => (
+
+                      <span                <span 
+
+                        className="rounded-full border border-[#111827]/15 bg-[#111827]/5 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[#111827] transition dark:border-white/10 dark:bg-white/10 dark:text-white"                  key={index}
+
+                        key={tool.id}                  className="px-3 py-2 rounded-lg text-sm"
+
+                      >                  style={{
+
+                        {tool.label}                    background: '#E5E7EB',
+
+                      </span>                    color: '#374151',
+
+                    ))                    fontFamily: 'Hubot Sans, sans-serif',
+
+                  ) : (                    fontWeight: 500
+
+                    <span className="text-sm text-gray-500 dark:text-gray-400">No tools were listed.</span>                  }}
+
+                  )}                >
+
+                </div>                  {tool}
+
+              </article>                </span>
+
+            </section>              ))}
+
+          </div>            </div>
+
+        )}          </div>
+
+      </div>        </div>
+
+    </div>      </div>
+
+  );
+
+};      {/* Footer - Full Width */}
       <div 
         className="relative w-full flex items-center justify-center"
         style={{
