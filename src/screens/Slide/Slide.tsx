@@ -9,8 +9,10 @@ interface SlideProps {
 export const Slide = (_props: SlideProps): JSX.Element => {
   const { onSearchClick } = _props;
   const [rumorQuery, setRumorQuery] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  const handleRumorSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleRumorSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedQuery = rumorQuery.trim();
 
@@ -18,8 +20,38 @@ export const Slide = (_props: SlideProps): JSX.Element => {
       return;
     }
 
-    onSearchClick?.(trimmedQuery, "normal");
-    setRumorQuery("");
+    setIsSubmitting(true);
+    setSubmissionError(null);
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/llm/generate-report/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: trimmedQuery,
+          user_type: "journalist",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      // Consume the response to surface any backend validation errors early.
+      await response.json().catch(() => undefined);
+
+      onSearchClick?.(trimmedQuery, "journalist");
+      setRumorQuery("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to reach the report service.";
+      console.error("Rumor submission failed:", message);
+      setSubmissionError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -149,15 +181,22 @@ export const Slide = (_props: SlideProps): JSX.Element => {
                           value={rumorQuery}
                           onChange={(event) => setRumorQuery(event.target.value)}
                           type="text"
+                          disabled={isSubmitting}
                         />
                       </div>
                       <button
-                        className="w-full sm:w-auto border border-[#374151] bg-[#1F2937] px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#111827] dark:border-[#F3F4F6] dark:bg-[#F3F4F6] dark:text-[#1F2937] dark:hover:bg-[#E5E7EB]"
+                        className="w-full sm:w-auto border border-[#374151] bg-[#1F2937] px-4 py-2 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#F3F4F6] dark:bg-[#F3F4F6] dark:text-[#1F2937] dark:hover:bg-[#E5E7EB]"
                         type="submit"
+                        disabled={isSubmitting}
                       >
-                        Submit
+                        {isSubmitting ? "Submitting..." : "Submit"}
                       </button>
                     </form>
+                    {submissionError && (
+                      <p className="mt-3 text-sm text-rose-600 dark:text-rose-400" role="alert">
+                        {submissionError}
+                      </p>
+                    )}
                   </div>
                 </div>
 
