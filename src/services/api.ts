@@ -1,4 +1,38 @@
-const API_BASE_URL = 'https://alethia-back.vercel.app';
+const sanitizeBaseUrl = (value: string): string => value.replace(/\/+$/, "");
+
+const resolveBaseUrl = (): string => {
+  const meta = (typeof import.meta !== "undefined" ? import.meta : undefined) as
+    | (ImportMeta & { env?: Record<string, string | undefined> })
+    | undefined;
+
+  const fromEnv = meta?.env?.VITE_API_BASE_URL;
+  return sanitizeBaseUrl(fromEnv ?? "http://127.0.0.1:8000");
+};
+
+const API_BASE_URL = resolveBaseUrl();
+
+const LLM_API_PREFIX = `${API_BASE_URL}/api/llm`;
+const GENERATE_REPORT_ENDPOINT = `${LLM_API_PREFIX}/generate-report/`;
+
+export interface ReportMetadata {
+  author_credibility_score?: number;
+  source_reliability_score?: number;
+  confidence_score?: number;
+  generated_at?: string;
+  processing_time?: number;
+  query?: string;
+  response_type?: string;
+  user_type?: string;
+  sources_analyzed?: number;
+  tools_used?: string[];
+  record_id?: string;
+}
+
+export interface ReportServiceResult {
+  report: AnalysisResponse;
+  metadata: ReportMetadata | null;
+  message?: string;
+}
 
 export interface Article {
   id: string;
@@ -35,7 +69,7 @@ export const fetchArticles = async (limit: number = 5): Promise<Article[]> => {
   console.log(`Fetching articles with limit: ${actualLimit}`);
   
   try {
-    const url = `${API_BASE_URL}/articles?limit=${actualLimit}`;
+  const url = `${API_BASE_URL}/articles?limit=${actualLimit}`;
     console.log('Fetching from URL:', url);
     
     const response = await fetch(url);
@@ -90,14 +124,14 @@ export const fetchArticles = async (limit: number = 5): Promise<Article[]> => {
 };
 
 // Generate analysis for normal users
-export const generateAnalysis = async (query: string): Promise<AnalysisResponse> => {
+export const generateAnalysis = async (query: string, userType: "normal" | "journalist" = "normal"): Promise<AnalysisResponse> => {
   console.log('Calling /generate endpoint with query:', query);
   
   try {
-    const requestBody = { content: query };
+    const requestBody = { query, user_type: userType };
     console.log('Request body:', requestBody);
     
-    const response = await fetch(`${API_BASE_URL}/generate`, {
+  const response = await fetch(`${API_BASE_URL}/generate/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,14 +181,17 @@ export const generateAnalysis = async (query: string): Promise<AnalysisResponse>
 };
 
 // Generate detailed report for journalists
-export const generateReport = async (query: string): Promise<AnalysisResponse> => {
+export const generateReport = async (
+  query: string,
+  userType: "normal" | "journalist" = "journalist"
+): Promise<ReportServiceResult> => {
   console.log('Calling /generate-report endpoint with query:', query);
   
   try {
-    const requestBody = { content: query };
+    const requestBody = { query, user_type: userType };
     console.log('Request body:', requestBody);
     
-    const response = await fetch(`${API_BASE_URL}/generate-report`, {
+  const response = await fetch(GENERATE_REPORT_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -171,42 +208,78 @@ export const generateReport = async (query: string): Promise<AnalysisResponse> =
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
     
-    const data = await response.json();
-    console.log('Raw API response:', data);
+    const payload = await response.json();
+    console.log('Raw API response:', payload);
+
+    if (!payload?.success) {
+      const message = payload?.message ?? 'Report generation failed';
+      throw new Error(message);
+    }
+
+    const rawReport = payload?.data?.report;
+    if (!rawReport) {
+      throw new Error('Report data missing from response');
+    }
     
     // Validate and structure the response data for detailed journalist report
     const structuredData: AnalysisResponse = {
-      author_cred_score: data.author_cred_score || data.authorCredScore || 75,
-      source_reliablity_score: data.source_reliablity_score || data.sourceReliabilityScore || 68,
-      citations: data.citations || [],
+      author_cred_score: rawReport.author_cred_score || rawReport.authorCredScore || 75,
+      source_reliablity_score: rawReport.source_reliablity_score || rawReport.sourceReliabilityScore || 68,
+      citations: rawReport.citations || [],
       Bias_sentiment_report: {
-        sentiment_distribution: data.Bias_sentiment_report?.sentiment_distribution || data.sentimentDistribution || ["Neutral"],
-        bias_classification: data.Bias_sentiment_report?.bias_classification || data.biasClassification || "Neutral"
+        sentiment_distribution: rawReport.Bias_sentiment_report?.sentiment_distribution || rawReport.sentimentDistribution || ["Neutral"],
+        bias_classification: rawReport.Bias_sentiment_report?.bias_classification || rawReport.biasClassification || "Neutral"
       },
-      evidence_based_contradictions: data.evidence_based_contradictions || data.contradictions || "",
-      manupulation_techniques: data.manupulation_techniques || data.manipulationTechniques || [],
+      evidence_based_contradictions: rawReport.evidence_based_contradictions || rawReport.contradictions || "",
+      manupulation_techniques: rawReport.manupulation_techniques || rawReport.manipulationTechniques || [],
       Model_score: {
-        Confidence_score: data.Model_score?.Confidence_score || data.confidenceScore || 82,
-        Key_features_influencing_decision: data.Model_score?.Key_features_influencing_decision || data.keyFeatures || ""
+        Confidence_score: rawReport.Model_score?.Confidence_score || rawReport.confidenceScore || 82,
+        Key_features_influencing_decision: rawReport.Model_score?.Key_features_influencing_decision || rawReport.keyFeatures || ""
       },
-      general_overview: data.general_overview || data.overview || "",
-      tools_used: data.tools_used || data.toolsUsed || []
+      general_overview: rawReport.general_overview || rawReport.overview || "",
+      tools_used: rawReport.tools_used || rawReport.toolsUsed || []
     };
+
+    const rawMetadata = payload?.data?.metadata;
+    const structuredMetadata: ReportMetadata | null = rawMetadata
+      ? {
+          author_credibility_score: rawMetadata.author_credibility_score ?? rawMetadata.authorCredScore,
+          source_reliability_score: rawMetadata.source_reliability_score ?? rawMetadata.sourceReliabilityScore,
+          confidence_score: rawMetadata.confidence_score ?? rawMetadata.confidenceScore,
+          generated_at: rawMetadata.generated_at,
+          processing_time: typeof rawMetadata.processing_time === 'number' ? rawMetadata.processing_time : undefined,
+          query: rawMetadata.query,
+          response_type: rawMetadata.response_type,
+          user_type: rawMetadata.user_type,
+          sources_analyzed: typeof rawMetadata.sources_analyzed === 'number' ? rawMetadata.sources_analyzed : undefined,
+          tools_used: Array.isArray(rawMetadata.tools_used) ? rawMetadata.tools_used : undefined,
+          record_id: rawMetadata.record_id,
+        }
+      : null;
     
-    console.log('Structured response:', structuredData);
-    return structuredData;
+    console.log('Structured response:', structuredData, structuredMetadata);
+    return {
+      report: structuredData,
+      metadata: structuredMetadata,
+      message: payload?.message,
+    };
   } catch (error) {
     console.error('Error generating report:', error);
     // Return mock data as fallback
     console.log('Falling back to mock data');
-    return getMockAnalysis('journalist');
+    return {
+      report: getMockAnalysis('journalist'),
+      metadata: null,
+      message: error instanceof Error ? error.message : 'Mock data fallback',
+    };
   }
 };
 
 // Legacy function for backward compatibility
 export const analyzeContent = async (query: string, userType: 'normal' | 'journalist'): Promise<AnalysisResponse> => {
   if (userType === 'journalist') {
-    return generateReport(query);
+    const result = await generateReport(query, userType);
+    return result.report;
   } else {
     return generateAnalysis(query);
   }

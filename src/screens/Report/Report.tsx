@@ -1,20 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UserType } from "../Slide";
-import { AnalysisResponse, generateAnalysis, generateReport } from "../../services/api";
-
-export interface ReportMetadata {
-	author_credibility_score?: number;
-	confidence_score?: number;
-	generated_at?: string;
-	processing_time?: number;
-	query?: string;
-	record_id?: string;
-	response_type?: string;
-	source_reliability_score?: number;
-	sources_analyzed?: number;
-	tools_used?: string[];
-	user_type?: string;
-}
+import { AnalysisResponse, ReportMetadata, generateAnalysis, generateReport } from "../../services/api";
 
 interface ReportProps {
 	searchQuery: string;
@@ -102,15 +88,17 @@ const LoadingSkeleton = (): JSX.Element => (
 	</div>
 );
 
-export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQuery, userType }: ReportProps): JSX.Element => {
+export const Report = ({ metadata: initialMetadata, onBackClick, onReady, prefetchedData, searchQuery, userType }: ReportProps): JSX.Element => {
 	const [requestState, setRequestState] = useState<RequestState>("idle");
 	const [reportData, setReportData] = useState<AnalysisResponse | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
- 	const readyNotifiedRef = useRef<boolean>(false);
+	const [reportMetadata, setReportMetadata] = useState<ReportMetadata | null>(initialMetadata ?? null);
+	const readyNotifiedRef = useRef<boolean>(false);
 
 	const loadReport = useCallback(async () => {
 		if (prefetchedData) {
 			setReportData(prefetchedData);
+			setReportMetadata(initialMetadata ?? null);
 			setRequestState("resolved");
 			return;
 		}
@@ -125,17 +113,22 @@ export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQ
 		setErrorMessage(null);
 
 		try {
-			const data = userType === "journalist"
-				? await generateReport(searchQuery)
-				: await generateAnalysis(searchQuery);
-
-			setReportData(data);
+			if (userType === "journalist") {
+				const { report, metadata } = await generateReport(searchQuery, userType);
+				setReportData(report);
+				setReportMetadata(metadata ?? null);
+			} else {
+				const analysis = await generateAnalysis(searchQuery, userType);
+				setReportData(analysis);
+				setReportMetadata(null);
+			}
 			setRequestState("resolved");
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to generate the report. Please try again.");
+			setReportMetadata(null);
 			setRequestState("error");
 		}
-	}, [prefetchedData, searchQuery, userType]);
+	}, [initialMetadata, prefetchedData, searchQuery, userType]);
 
 	useEffect(() => {
 		void loadReport();
@@ -210,24 +203,24 @@ export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQ
 
 	const hasQuery = searchQuery.trim().length > 0;
 	const formattedGeneratedAt = useMemo(() => {
-		if (!metadata?.generated_at) {
+		if (!reportMetadata?.generated_at) {
 			return null;
 		}
 
-		const date = new Date(metadata.generated_at);
-		return Number.isNaN(date.getTime()) ? metadata.generated_at : date.toLocaleString();
-	}, [metadata?.generated_at]);
+		const date = new Date(reportMetadata.generated_at);
+		return Number.isNaN(date.getTime()) ? reportMetadata.generated_at : date.toLocaleString();
+	}, [reportMetadata?.generated_at]);
 
 	const metadataTools = useMemo(() => {
-		if (!metadata?.tools_used || !Array.isArray(metadata.tools_used)) {
+		if (!reportMetadata?.tools_used || !Array.isArray(reportMetadata.tools_used)) {
 			return [];
 		}
 
-		return metadata.tools_used.map((tool) => ({
+		return reportMetadata.tools_used.map((tool) => ({
 			id: tool,
 			label: tool,
 		}));
-	}, [metadata?.tools_used]);
+	}, [reportMetadata?.tools_used]);
 
 	useEffect(() => {
 		if (!hasQuery && !prefetchedData) {
@@ -254,14 +247,14 @@ export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQ
 						<span className="text-sm text-slate-600/80 dark:text-slate-300/80">
 							Prepared for {userType === "journalist" ? "Investigative Journalist" : "Reader"}
 						</span>
-						{metadata && (
+						{reportMetadata && (
 							<div className="mt-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
 								{formattedGeneratedAt && <span>Generated {formattedGeneratedAt}</span>}
-								{typeof metadata.processing_time === "number" && metadata.processing_time > 0 && (
-									<span>Processed {metadata.processing_time.toFixed(1)}s</span>
+								{typeof reportMetadata.processing_time === "number" && reportMetadata.processing_time > 0 && (
+									<span>Processed {reportMetadata.processing_time.toFixed(1)}s</span>
 								)}
-								{typeof metadata.sources_analyzed === "number" && metadata.sources_analyzed > 0 && (
-									<span>{metadata.sources_analyzed} Sources</span>
+								{typeof reportMetadata.sources_analyzed === "number" && reportMetadata.sources_analyzed > 0 && (
+									<span>{reportMetadata.sources_analyzed} Sources</span>
 								)}
 							</div>
 						)}
@@ -455,6 +448,78 @@ export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQ
 										</div>
 									</article>
 								</section>
+
+								{reportMetadata && (
+									<section className="border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-lg dark:border-slate-700/40 dark:bg-slate-900/30">
+										<h3 className="font-display text-2xl">Generation Metadata</h3>
+										<div className="mt-4 grid grid-cols-1 gap-3 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+											{reportMetadata.query && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Query</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.query}</span>
+												</div>
+											)}
+											{formattedGeneratedAt && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Generated</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{formattedGeneratedAt}</span>
+												</div>
+											)}
+											{typeof reportMetadata.processing_time === "number" && reportMetadata.processing_time > 0 && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Processing Time</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.processing_time.toFixed(2)}s</span>
+												</div>
+											)}
+											{typeof reportMetadata.sources_analyzed === "number" && reportMetadata.sources_analyzed > 0 && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Sources Analyzed</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.sources_analyzed}</span>
+												</div>
+											)}
+											{typeof reportMetadata.author_credibility_score === "number" && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Author Credibility</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.author_credibility_score} / 100</span>
+												</div>
+											)}
+											{typeof reportMetadata.source_reliability_score === "number" && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Source Reliability</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.source_reliability_score} / 100</span>
+												</div>
+											)}
+											{typeof reportMetadata.confidence_score === "number" && (
+												<div>
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Confidence</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.confidence_score}%</span>
+												</div>
+											)}
+											{reportMetadata.record_id && (
+												<div className="sm:col-span-2">
+													<span className="block text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Record ID</span>
+													<span className="font-medium text-[#0F172A] dark:text-white">{reportMetadata.record_id}</span>
+												</div>
+											)}
+										</div>
+
+									{metadataTools.length > 0 && (
+											<div className="mt-4">
+												<span className="text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Metadata Tools</span>
+												<div className="mt-2 flex flex-wrap gap-2">
+													{metadataTools.map((tool) => (
+														<span
+															className="rounded-sm border border-[#0F172A]/10 bg-[#0F172A]/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-[#0F172A] dark:border-white/15 dark:bg-white/10 dark:text-white"
+															key={tool.id}
+														>
+															{tool.label}
+														</span>
+													))}
+												</div>
+											</div>
+										)}
+									</section>
+								)}
 							</div>
 						)}
 					</main>
