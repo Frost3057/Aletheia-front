@@ -2,11 +2,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UserType } from "../Slide";
 import { AnalysisResponse, generateAnalysis, generateReport } from "../../services/api";
 
+export interface ReportMetadata {
+	author_credibility_score?: number;
+	confidence_score?: number;
+	generated_at?: string;
+	processing_time?: number;
+	query?: string;
+	record_id?: string;
+	response_type?: string;
+	source_reliability_score?: number;
+	sources_analyzed?: number;
+	tools_used?: string[];
+	user_type?: string;
+}
+
 interface ReportProps {
 	searchQuery: string;
 	userType: UserType;
 	onBackClick: () => void;
 	onReady?: () => void;
+	prefetchedData?: AnalysisResponse | null;
+	metadata?: ReportMetadata | null;
 }
 
 type RequestState = "idle" | "loading" | "resolved" | "error";
@@ -86,13 +102,19 @@ const LoadingSkeleton = (): JSX.Element => (
 	</div>
 );
 
-export const Report = ({ onBackClick, onReady, searchQuery, userType }: ReportProps): JSX.Element => {
+export const Report = ({ metadata, onBackClick, onReady, prefetchedData, searchQuery, userType }: ReportProps): JSX.Element => {
 	const [requestState, setRequestState] = useState<RequestState>("idle");
 	const [reportData, setReportData] = useState<AnalysisResponse | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
  	const readyNotifiedRef = useRef<boolean>(false);
 
 	const loadReport = useCallback(async () => {
+		if (prefetchedData) {
+			setReportData(prefetchedData);
+			setRequestState("resolved");
+			return;
+		}
+
 		if (!searchQuery) {
 			setReportData(null);
 			setRequestState("idle");
@@ -113,7 +135,7 @@ export const Report = ({ onBackClick, onReady, searchQuery, userType }: ReportPr
 			setErrorMessage(error instanceof Error ? error.message : "Unable to generate the report. Please try again.");
 			setRequestState("error");
 		}
-	}, [searchQuery, userType]);
+	}, [prefetchedData, searchQuery, userType]);
 
 	useEffect(() => {
 		void loadReport();
@@ -187,12 +209,31 @@ export const Report = ({ onBackClick, onReady, searchQuery, userType }: ReportPr
 	}, [reportData]);
 
 	const hasQuery = searchQuery.trim().length > 0;
+	const formattedGeneratedAt = useMemo(() => {
+		if (!metadata?.generated_at) {
+			return null;
+		}
+
+		const date = new Date(metadata.generated_at);
+		return Number.isNaN(date.getTime()) ? metadata.generated_at : date.toLocaleString();
+	}, [metadata?.generated_at]);
+
+	const metadataTools = useMemo(() => {
+		if (!metadata?.tools_used || !Array.isArray(metadata.tools_used)) {
+			return [];
+		}
+
+		return metadata.tools_used.map((tool) => ({
+			id: tool,
+			label: tool,
+		}));
+	}, [metadata?.tools_used]);
 
 	useEffect(() => {
-		if (!hasQuery) {
+		if (!hasQuery && !prefetchedData) {
 			onReady?.();
 		}
-	}, [hasQuery, onReady]);
+	}, [hasQuery, onReady, prefetchedData]);
 
 	return (
 		<div className="min-h-screen bg-[#FDFBF7] text-[#1F2937] dark:bg-[#1F2937] dark:text-[#F3F4F6] font-body">
@@ -213,6 +254,17 @@ export const Report = ({ onBackClick, onReady, searchQuery, userType }: ReportPr
 						<span className="text-sm text-slate-600/80 dark:text-slate-300/80">
 							Prepared for {userType === "journalist" ? "Investigative Journalist" : "Reader"}
 						</span>
+						{metadata && (
+							<div className="mt-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+								{formattedGeneratedAt && <span>Generated {formattedGeneratedAt}</span>}
+								{typeof metadata.processing_time === "number" && metadata.processing_time > 0 && (
+									<span>Processed {metadata.processing_time.toFixed(1)}s</span>
+								)}
+								{typeof metadata.sources_analyzed === "number" && metadata.sources_analyzed > 0 && (
+									<span>{metadata.sources_analyzed} Sources</span>
+								)}
+							</div>
+						)}
 					</div>
 				</header>
 

@@ -3,7 +3,7 @@ import { FormEvent, useState } from "react";
 export type UserType = "normal" | "journalist";
 
 interface SlideProps {
-  onSearchClick?: (query: string, userType: UserType) => void;
+  onSearchClick?: (query: string, userType: UserType) => Promise<void> | void;
 }
 
 export const Slide = (_props: SlideProps): JSX.Element => {
@@ -24,26 +24,11 @@ export const Slide = (_props: SlideProps): JSX.Element => {
     setSubmissionError(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/llm/generate-report/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: trimmedQuery,
-          user_type: "journalist",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Request failed with status ${response.status}`);
+      if (!onSearchClick) {
+        throw new Error("Search handler not configured.");
       }
 
-      // Consume the response to surface any backend validation errors early.
-      await response.json().catch(() => undefined);
-
-      onSearchClick?.(trimmedQuery, "journalist");
+      await onSearchClick(trimmedQuery, "journalist");
       setRumorQuery("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to reach the report service.";
