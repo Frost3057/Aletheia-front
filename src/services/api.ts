@@ -1,4 +1,38 @@
-const API_BASE_URL = 'https://alethia-back.vercel.app';
+const sanitizeBaseUrl = (value: string): string => value.replace(/\/+$/, "");
+
+const resolveBaseUrl = (): string => {
+  const meta = (typeof import.meta !== "undefined" ? import.meta : undefined) as
+    | (ImportMeta & { env?: Record<string, string | undefined> })
+    | undefined;
+
+  const fromEnv = meta?.env?.VITE_API_BASE_URL;
+  return sanitizeBaseUrl(fromEnv ?? "https://demyst-latest.onrender.com");
+};
+
+const API_BASE_URL = resolveBaseUrl();
+
+const LLM_API_PREFIX = `${API_BASE_URL}/api/llm`;
+const GENERATE_REPORT_ENDPOINT = `${LLM_API_PREFIX}/generate-report/`;
+
+export interface ReportMetadata {
+  author_credibility_score?: number;
+  source_reliability_score?: number;
+  confidence_score?: number;
+  generated_at?: string;
+  processing_time?: number;
+  query?: string;
+  response_type?: string;
+  user_type?: string;
+  sources_analyzed?: number;
+  tools_used?: string[];
+  record_id?: string;
+}
+
+export interface ReportServiceResult {
+  report: AnalysisResponse;
+  metadata: ReportMetadata | null;
+  message?: string;
+}
 
 export interface Article {
   id: string;
@@ -35,7 +69,7 @@ export const fetchArticles = async (limit: number = 5): Promise<Article[]> => {
   console.log(`Fetching articles with limit: ${actualLimit}`);
   
   try {
-    const url = `${API_BASE_URL}/articles?limit=${actualLimit}`;
+  const url = `${API_BASE_URL}/articles?limit=${actualLimit}`;
     console.log('Fetching from URL:', url);
     
     const response = await fetch(url);
@@ -90,14 +124,14 @@ export const fetchArticles = async (limit: number = 5): Promise<Article[]> => {
 };
 
 // Generate analysis for normal users
-export const generateAnalysis = async (query: string): Promise<AnalysisResponse> => {
+export const generateAnalysis = async (query: string, userType: "normal" | "journalist" = "normal"): Promise<AnalysisResponse> => {
   console.log('Calling /generate endpoint with query:', query);
   
   try {
-    const requestBody = { content: query };
+    const requestBody = { query, user_type: userType };
     console.log('Request body:', requestBody);
     
-    const response = await fetch(`${API_BASE_URL}/generate`, {
+  const response = await fetch(`${API_BASE_URL}/generate/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -140,21 +174,23 @@ export const generateAnalysis = async (query: string): Promise<AnalysisResponse>
     return structuredData;
   } catch (error) {
     console.error('Error generating analysis:', error);
-    // Return mock data as fallback
-    console.log('Falling back to mock data');
-    return getMockAnalysis('normal');
+    const message = error instanceof Error ? error.message : 'Unable to generate analysis.';
+    throw new Error(message);
   }
 };
 
 // Generate detailed report for journalists
-export const generateReport = async (query: string): Promise<AnalysisResponse> => {
+export const generateReport = async (
+  query: string,
+  userType: "normal" | "journalist" = "journalist"
+): Promise<ReportServiceResult> => {
   console.log('Calling /generate-report endpoint with query:', query);
   
   try {
-    const requestBody = { content: query };
+    const requestBody = { query, user_type: userType };
     console.log('Request body:', requestBody);
     
-    const response = await fetch(`${API_BASE_URL}/generate-report`, {
+  const response = await fetch(GENERATE_REPORT_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -171,42 +207,73 @@ export const generateReport = async (query: string): Promise<AnalysisResponse> =
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
     
-    const data = await response.json();
-    console.log('Raw API response:', data);
+    const payload = await response.json();
+    console.log('Raw API response:', payload);
+
+    if (!payload?.success) {
+      const message = payload?.message ?? 'Report generation failed';
+      throw new Error(message);
+    }
+
+    const rawReport = payload?.data?.report;
+    if (!rawReport) {
+      throw new Error('Report data missing from response');
+    }
     
     // Validate and structure the response data for detailed journalist report
     const structuredData: AnalysisResponse = {
-      author_cred_score: data.author_cred_score || data.authorCredScore || 75,
-      source_reliablity_score: data.source_reliablity_score || data.sourceReliabilityScore || 68,
-      citations: data.citations || [],
+      author_cred_score: rawReport.author_cred_score || rawReport.authorCredScore || 75,
+      source_reliablity_score: rawReport.source_reliablity_score || rawReport.sourceReliabilityScore || 68,
+      citations: rawReport.citations || [],
       Bias_sentiment_report: {
-        sentiment_distribution: data.Bias_sentiment_report?.sentiment_distribution || data.sentimentDistribution || ["Neutral"],
-        bias_classification: data.Bias_sentiment_report?.bias_classification || data.biasClassification || "Neutral"
+        sentiment_distribution: rawReport.Bias_sentiment_report?.sentiment_distribution || rawReport.sentimentDistribution || ["Neutral"],
+        bias_classification: rawReport.Bias_sentiment_report?.bias_classification || rawReport.biasClassification || "Neutral"
       },
-      evidence_based_contradictions: data.evidence_based_contradictions || data.contradictions || "",
-      manupulation_techniques: data.manupulation_techniques || data.manipulationTechniques || [],
+      evidence_based_contradictions: rawReport.evidence_based_contradictions || rawReport.contradictions || "",
+      manupulation_techniques: rawReport.manupulation_techniques || rawReport.manipulationTechniques || [],
       Model_score: {
-        Confidence_score: data.Model_score?.Confidence_score || data.confidenceScore || 82,
-        Key_features_influencing_decision: data.Model_score?.Key_features_influencing_decision || data.keyFeatures || ""
+        Confidence_score: rawReport.Model_score?.Confidence_score || rawReport.confidenceScore || 82,
+        Key_features_influencing_decision: rawReport.Model_score?.Key_features_influencing_decision || rawReport.keyFeatures || ""
       },
-      general_overview: data.general_overview || data.overview || "",
-      tools_used: data.tools_used || data.toolsUsed || []
+      general_overview: rawReport.general_overview || rawReport.overview || "",
+      tools_used: rawReport.tools_used || rawReport.toolsUsed || []
     };
+
+    const rawMetadata = payload?.data?.metadata;
+    const structuredMetadata: ReportMetadata | null = rawMetadata
+      ? {
+          author_credibility_score: rawMetadata.author_credibility_score ?? rawMetadata.authorCredScore,
+          source_reliability_score: rawMetadata.source_reliability_score ?? rawMetadata.sourceReliabilityScore,
+          confidence_score: rawMetadata.confidence_score ?? rawMetadata.confidenceScore,
+          generated_at: rawMetadata.generated_at,
+          processing_time: typeof rawMetadata.processing_time === 'number' ? rawMetadata.processing_time : undefined,
+          query: rawMetadata.query,
+          response_type: rawMetadata.response_type,
+          user_type: rawMetadata.user_type,
+          sources_analyzed: typeof rawMetadata.sources_analyzed === 'number' ? rawMetadata.sources_analyzed : undefined,
+          tools_used: Array.isArray(rawMetadata.tools_used) ? rawMetadata.tools_used : undefined,
+          record_id: rawMetadata.record_id,
+        }
+      : null;
     
-    console.log('Structured response:', structuredData);
-    return structuredData;
+    console.log('Structured response:', structuredData, structuredMetadata);
+    return {
+      report: structuredData,
+      metadata: structuredMetadata,
+      message: payload?.message,
+    };
   } catch (error) {
     console.error('Error generating report:', error);
-    // Return mock data as fallback
-    console.log('Falling back to mock data');
-    return getMockAnalysis('journalist');
+    const message = error instanceof Error ? error.message : 'Unable to generate report.';
+    throw new Error(message);
   }
 };
 
 // Legacy function for backward compatibility
 export const analyzeContent = async (query: string, userType: 'normal' | 'journalist'): Promise<AnalysisResponse> => {
   if (userType === 'journalist') {
-    return generateReport(query);
+    const result = await generateReport(query, userType);
+    return result.report;
   } else {
     return generateAnalysis(query);
   }
@@ -260,59 +327,3 @@ const getMockArticles = (limit: number): Article[] => {
   return mockArticles.slice(0, limit);
 };
 
-const getMockAnalysis = (userType: 'normal' | 'journalist'): AnalysisResponse => {
-  if (userType === 'normal') {
-    return {
-      author_cred_score: 75,
-      source_reliablity_score: 68,
-      citations: [
-        "Climate Change 2023: Synthesis Report. IPCC, 2023.",
-        "Global Economic Impact of Climate Change. World Bank, 2022.",
-        "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-      ],
-      Bias_sentiment_report: {
-        sentiment_distribution: ["Neutral", "Concern"],
-        bias_classification: "Moderate Left-leaning"
-      },
-      evidence_based_contradictions: "The article presents strong data on climate impacts but may underestimate technological solutions that could mitigate some negative effects.",
-      manupulation_techniques: [
-        "Cherry-picking of data points",
-        "Appeal to fear scenarios"
-      ],
-      Model_score: {
-        Confidence_score: 82,
-        Key_features_influencing_decision: "High-quality scientific citations and transparent methodology, but limited perspective on solutions."
-      },
-      general_overview: "This analysis shows the content has strong factual grounding with credible sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive solutions.",
-      tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification"]
-    };
-  } else {
-    // Journalist detailed data
-    return {
-      author_cred_score: 75,
-      source_reliablity_score: 68,
-      citations: [
-        "Climate Change 2023: Synthesis Report. IPCC, 2023. https://www.ipcc.ch/report/ar6/syr/",
-        "Global Economic Impact of Climate Change. World Bank, 2022. https://www.worldbank.org/climate-report",
-        "McKinsey Global Institute. Climate risk and response in Asia. 2023."
-      ],
-      Bias_sentiment_report: {
-        sentiment_distribution: ["Neutral", "Concern", "Urgency"],
-        bias_classification: "Moderate Left-leaning"
-      },
-      evidence_based_contradictions: "While the article presents compelling data on climate impacts, it understates the role of technological innovation in mitigation efforts. Recent studies show renewable energy costs have dropped 70% faster than predicted, which contradicts the pessimistic timeline presented.",
-      manupulation_techniques: [
-        "Cherry-picking of data points",
-        "Appeal to fear through catastrophic scenarios", 
-        "False dichotomy between economic growth and environmental protection",
-        "Selective citation of studies"
-      ],
-      Model_score: {
-        Confidence_score: 82,
-        Key_features_influencing_decision: "High-quality scientific citations, peer-reviewed sources, transparent methodology, but limited perspective on technological solutions and economic adaptation strategies."
-      },
-      general_overview: "This analysis examines claims about climate change impacts on the global economy. The content demonstrates strong factual grounding with credible scientific sources, though it shows a moderate bias toward emphasizing negative impacts while underemphasizing adaptive capacity and technological solutions. The author's credentials are solid, and the source reliability is above average.",
-      tools_used: ["Sentiment Analysis", "Bias Detection", "Fact Verification", "Source Credibility Assessment", "Citation Analysis"]
-    };
-  }
-};
