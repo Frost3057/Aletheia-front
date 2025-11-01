@@ -1,5 +1,7 @@
 # 🔍 Aletheia
 
+![Uploading GIF(1).gif…]()
+
 ## What is Aletheia?
 
 Aletheia is an AI-powered platform that transforms the way you create reports and presentations. Built with modern web technologies, it combines the power of AI with an intuitive interface to help you generate meaningful insights and share them effortlessly.
