@@ -1,6 +1,6 @@
 # 🔍 Aletheia
 
-![Uploading GIF(1).gif…]()
+![GIF(1)](https://github.com/user-attachments/assets/01802dbc-019e-4a92-81f1-582d1666372f)
 
 ## What is Aletheia?
 
